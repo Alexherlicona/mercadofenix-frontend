@@ -1,19 +1,15 @@
 // src/app/fenix/mi-cuenta/auth/callback/page.tsx
-// Google redirige aquí después de que el usuario elige su cuenta
-// Esta página toma el ?code= de la URL, llama al backend y guarda el token
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, CheckCircle2, AlertCircle, Search } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { Suspense, useEffect, useState, useRef } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import CartIcon from "@/components/ui/CartIcon";
 import Link from "next/link";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-export default function GoogleCallbackPage() {
-
+function GoogleCallbackContent() {
   const pathname = usePathname();
   const NAV_LINKS = [
     { href: "/fenix", label: "Inicio" },
@@ -27,7 +23,7 @@ export default function GoogleCallbackPage() {
   const [estado, setEstado] = useState<"cargando" | "exito" | "error">("cargando");
   const [mensaje, setMensaje] = useState("");
   const [esNuevo, setEsNuevo] = useState(false);
-  const ran = useRef(false); // evita doble ejecución en React Strict Mode
+  const ran = useRef(false);
 
   useEffect(() => {
     if (ran.current) return;
@@ -45,9 +41,8 @@ export default function GoogleCallbackPage() {
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30_000); // 30 s
+    const timeoutId = setTimeout(() => controller.abort(), 30_000);
 
-    // Llamar al backend con el code que Google nos dio
     fetch(`${API}/api/auth/google/callback?code=${encodeURIComponent(code)}`, {
       signal: controller.signal,
     })
@@ -57,7 +52,6 @@ export default function GoogleCallbackPage() {
         return data;
       })
       .then(data => {
-        // Guardar token igual que el login normal
         localStorage.setItem("access_token", data.access_token);
         if (data.user) {
           const nombre = `${data.user.nombres || ""} ${data.user.apellidos || ""}`.trim();
@@ -71,8 +65,6 @@ export default function GoogleCallbackPage() {
         setEsNuevo(!!data.user?.es_nuevo);
         clearTimeout(timeoutId);
 
-        // Si es usuario nuevo sin teléfono → pedir que complete perfil
-        // Si ya tiene cuenta → ir a mi-cuenta o a donde iba
         const next = new URLSearchParams(window.location.search).get("next") || "/fenix/mi-cuenta";
         setTimeout(() => {
           if (data.user?.es_nuevo) {
@@ -99,11 +91,9 @@ export default function GoogleCallbackPage() {
           <div className="flex items-center px-3 py-2 bg-orange-50 rounded-xl border border-orange-100">
             <CartIcon />
           </div>
-          {/* Nav desktop — visible solo en lg+, reemplaza al botón hamburguesa visualmente */}
           <nav className="hidden lg:flex items-center gap-0.5 flex-shrink-0 ml-1">
             {NAV_LINKS.map(({ href, label }) => {
               const isActive = pathname === href;
-
               return (
                 <Link
                   key={href}
@@ -121,7 +111,6 @@ export default function GoogleCallbackPage() {
         </div>
       </div>
       <div className="text-center space-y-4 max-w-sm w-full">
-
         {estado === "cargando" && (
           <>
             <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto">
@@ -169,5 +158,19 @@ export default function GoogleCallbackPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function GoogleCallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+          <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+        </div>
+      }
+    >
+      <GoogleCallbackContent />
+    </Suspense>
   );
 }
