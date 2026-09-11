@@ -21,9 +21,10 @@ const MENU = [
   { title: "Reportes y Quejas",    icon: AlertCircle, href: "/admin-phoenix-2025/dashboard/reportes" },
 ];
 
-function adminHeaders() {
+function adminHeaders(): Record<string, string> {
   const t = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
-  return t ? { Authorization: `Bearer ${t}` } : {};
+  if (!t) return {};
+  return { Authorization: `Bearer ${t}` };
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
