@@ -13,8 +13,11 @@ import {
 } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-function hdr() { return { Authorization: `Bearer ${localStorage.getItem("access_token")}`, "Content-Type": "application/json" }; }
-
+function hdr(): Record<string, string> {
+  const t = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  if (!t) return { "Content-Type": "application/json" };
+  return { Authorization: `Bearer ${t}`, "Content-Type": "application/json" };
+}
 // ── Config visual ─────────────────────────────────────────────────────────────
 const TIPO_REP_CFG: Record<string, { label: string; icon: any; color: string; bg: string }> = {
   tienda:   { label: "Tienda",    icon: Store,       color: "text-red-400",    bg: "bg-red-500/10 border-red-500/20" },
@@ -108,8 +111,7 @@ function ModalDetalle({ item, tipo, onClose, onUpdate }: {
         {/* Header */}
         <div className="sticky top-0 bg-gray-950 border-b border-white/8 px-5 py-4 flex items-start justify-between gap-3 z-10">
           <div className="flex items-center gap-3 min-w-0">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${tipoCfg.bg || "bg-gray-800"}`}>
-              <TipoIcon className={`w-4 h-4 ${tipoCfg.color}`} />
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${"bg" in tipoCfg ? tipoCfg.bg : "bg-gray-800"}`}>              <TipoIcon className={`w-4 h-4 ${tipoCfg.color}`} />
             </div>
             <div className="min-w-0">
               <p className="font-bold text-white text-sm truncate">{item.titulo}</p>
