@@ -1,12 +1,12 @@
 // src/app/fenix/mi-cuenta/reportar-tienda/page.tsx
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { Suspense, useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle, Store, Package, Wrench, HelpCircle,
   Upload, X, CheckCircle2, ChevronLeft, Loader2,
-  AlertCircle, Camera, Search
+  AlertCircle, Camera
 } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -72,7 +72,9 @@ function Campo({ label, required, children, hint }: {
 const inp = "w-full px-4 py-3 bg-gray-900 border border-white/10 rounded-2xl text-sm text-white placeholder-gray-600 outline-none focus:border-orange-500/40 transition";
 
 // ════════════════════════════════════════════════════════════════════════════
-export default function ReportarTiendaPage() {
+// Contenido real de la página. Usa useSearchParams, por eso debe ir
+// envuelto en <Suspense> desde el export default de abajo.
+function ReportarTiendaContent() {
   const router      = useRouter();
   const params      = useSearchParams();
   const fileRef     = useRef<HTMLInputElement>(null);
@@ -440,5 +442,22 @@ export default function ReportarTiendaPage() {
         )}
       </div>
     </div>
+  );
+}
+
+// ── Export por defecto: envuelve el contenido en Suspense ────────────────────
+// Esto es necesario porque useSearchParams() requiere un límite de Suspense
+// para que Next.js pueda prerenderizar la página sin fallar el build.
+export default function ReportarTiendaPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-orange-400 animate-spin" />
+        </div>
+      }
+    >
+      <ReportarTiendaContent />
+    </Suspense>
   );
 }
