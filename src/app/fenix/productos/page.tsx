@@ -1,7 +1,7 @@
 // app/fenix/productos/page.tsx
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import ProductCard from "@/components/ui/ProductCard";
 import MobileNav from "@/components/ui/MobileNav";
@@ -60,7 +60,9 @@ function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-export default function ProductosPage() {
+// Contenido real de la página. Usa useSearchParams, por eso debe ir
+// envuelto en <Suspense> desde el export default de abajo.
+function ProductosContent() {
     const pathname = usePathname();
     const NAV_LINKS = [
       { href: "/fenix",           label: "Inicio"     },
@@ -285,5 +287,22 @@ export default function ProductosPage() {
 
       
     </div>
+  );
+}
+
+// ── Export por defecto: envuelve el contenido en Suspense ────────────────────
+// Esto es necesario porque useSearchParams() requiere un límite de Suspense
+// para que Next.js pueda prerenderizar la página sin fallar el build.
+export default function ProductosPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-orange-400 animate-spin" />
+        </div>
+      }
+    >
+      <ProductosContent />
+    </Suspense>
   );
 }
