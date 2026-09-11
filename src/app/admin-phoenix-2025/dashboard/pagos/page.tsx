@@ -629,7 +629,7 @@ export default function PagosPage() {
                         ${vencido
                           ? "bg-red-600 hover:bg-red-500 text-white"
                           : "bg-orange-600 hover:bg-orange-500 text-white"}`}>
-                      <DollarSign className="w-3.5 h-3.5 inline mr-1"/>
+                      <DollarSign className="w-3.5 h-3.5 inline mr-1"/>+
                       {vencido ? "Renovar" : "Cobrar"}
                     </button>
                   </div>
