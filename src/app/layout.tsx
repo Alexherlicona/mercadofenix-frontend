@@ -1,4 +1,5 @@
 // app/layout.tsx
+import "@/styles/globals.css";
 import MobileNav from "@/components/ui/MobileNav";
 
 export const metadata = {
