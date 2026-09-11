@@ -9,7 +9,7 @@ import {
 import Header from "@/components/ui/header";
 import ProductCard from "@/components/ui/ProductCard";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://mercadofenix-backend.onrender.com";
 
 async function getData() {
   try {
