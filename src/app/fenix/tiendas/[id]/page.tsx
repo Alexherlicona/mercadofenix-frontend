@@ -130,7 +130,7 @@ export default function TiendaIndividualPage() {
             <div className="w-24 h-24 md:w-28 md:h-28 rounded-full overflow-hidden bg-white/20 border-4 border-white/40 flex-shrink-0 flex items-center justify-center text-white text-3xl font-black shadow-xl">
               {tienda.logo_url ? (
                 <Image
-                  src={`${API_URL}${tienda.logo_url}`}
+                  src={tienda.logo_url?.startsWith("http") ? tienda.logo_url: `${API_URL}${tienda.logo_url}`}
                   alt={tienda.nombre_tienda}
                   width={112}
                   height={112}
