@@ -123,7 +123,7 @@ export default function VendedorDashboard() {
           {/* Logo */}
           <div className={`w-16 h-16 rounded-2xl ring-2 ${planCfg.ring} bg-white/10 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-lg`}>
             {v.logo_url
-              ? <img src={`${API_URL}${v.logo_url}`} className="w-full h-full object-cover" />
+              ? <img src={v.logo_url?.startsWith("http") ? v.logo_url: `${API_URL}${v.logo_url}`} className="w-full h-full object-cover" />
               : <Store className="w-7 h-7 text-white" />}
           </div>
           {/* Info */}
