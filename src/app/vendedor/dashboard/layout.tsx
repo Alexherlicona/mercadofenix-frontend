@@ -103,7 +103,7 @@ export default function VendedorLayout({ children }: { children: React.ReactNode
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-600 to-red-700 flex items-center justify-center flex-shrink-0 overflow-hidden">
                 {vendedor.logo_url
-                  ? <img src={`${API_URL}${vendedor.logo_url}`} className="w-full h-full object-cover" />
+                  ? <img src={vendedor.logo_url?.startsWith("http") ? vendedor.logo_url: `${API_URL}${vendedor.logo_url}`} className="w-full h-full object-cover" />
                   : <Store className="w-4 h-4 text-white" />}
               </div>
               <div className="min-w-0 flex-1">
