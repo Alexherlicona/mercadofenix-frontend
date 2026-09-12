@@ -207,7 +207,7 @@ export default function TiendasPage() {
                 <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-orange-500 to-red-600 flex-shrink-0 flex items-center justify-center text-white text-xl font-black shadow">
                   {tienda.logo_url ? (
                     <Image
-                      src={`${API_URL}${tienda.logo_url}`}
+                      src={tienda.logo_url?.startsWith("http") ? tienda.logo_url: `${API_URL}${tienda.logo_url}`}
                       alt={tienda.nombre_tienda}
                       width={64}
                       height={64}
