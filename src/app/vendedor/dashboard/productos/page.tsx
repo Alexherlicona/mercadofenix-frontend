@@ -250,7 +250,7 @@ function ModalCompartir({ producto, vendedor, onClose }: { producto: Producto; v
             <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
               <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-800 flex-shrink-0">
                 {producto.fotos?.[0]?.url
-                  ? <img src={`${API_URL}${producto.fotos[0].url}`} className="w-full h-full object-cover" />
+                  ? <img src={ producto.fotos[0].url.startsWith("http") ? producto.fotos[0].url: `${API_URL}${producto.fotos[0].url}`} className="w-full h-full object-cover" />
                   : <div className="w-full h-full flex items-center justify-center"><ImageIcon className="w-5 h-5 text-gray-600"/></div>}
               </div>
               <div className="flex-1 min-w-0">
