@@ -13,6 +13,7 @@ export default function AdminLogin() {
   const [password, setPassword] = useState("admin123");
   const [isRegister, setIsRegister] = useState(false);
   const router = useRouter();
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +23,7 @@ export default function AdminLogin() {
         ? { usuario, password } 
         : { usuario, password }; // ← ahora usamos "usuario"
 
-      const res = await axios.post(`http://localhost:8000/api${endpoint}`, payload);
+      const res = await axios.post(`${API_URL}/api${endpoint}`, payload);
       
       // En tu página de login (admin-phoenix-2025/page.tsx o donde esté)
       if (!isRegister) {
