@@ -10,7 +10,7 @@ import {
   ExternalLink, Copy, Check, Globe, Radio
 } from "lucide-react";
 
-const API_URL = "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 const PLATAFORMA_URL = "https://mercadofenix.hn"; // ← cambia a tu dominio
 
 function getToken() { return typeof window !== "undefined" ? localStorage.getItem("vendedor_token") : null; }
