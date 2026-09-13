@@ -129,7 +129,7 @@ export default function VendedorDashboard() {
 
   return (
     /* ── overflow-x-hidden evita scroll horizontal en móvil ── */
-    <div className="max-w-3xl mx-auto space-y-5 pb-8 px-4 overflow-x-hidden">
+    <div className="max-w-xl mx-auto space-y-5 pb-10 px-4 overflow-x-hidden">
 
       {/* ── HEADER TIENDA ─────────────────────────────────────────────────── */}
       <div className={`bg-gradient-to-br ${planCfg.gradient} rounded-3xl p-5 shadow-xl relative overflow-hidden`}>
