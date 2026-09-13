@@ -150,7 +150,7 @@ export default function MiPerfilPage() {
           <div className="relative flex-shrink-0 cursor-pointer group" onClick={() => fileRef.current?.click()}>
             <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gradient-to-br from-orange-600 to-red-700 flex items-center justify-center shadow-lg">
               {preview
-                ? <img src={preview} className="w-full h-full object-cover" />
+                ? <img src={preview.startsWith("http") ? preview : `${API}${preview}`} className="w-full h-full object-cover" />
                 : <Store className="w-8 h-8 text-white" />}
             </div>
             <div className="absolute inset-0 rounded-2xl bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
