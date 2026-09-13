@@ -270,7 +270,7 @@ export default function CarritoPage() {
 
             <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
               <Image
-                src={item.imagen_principal ? `${API_URL}${item.imagen_principal}` : "/placeholder.jpg"}
+                src={item.imagen_principal?.startsWith("http") ? item.imagen_principal : `${API_URL}${item.imagen_principal}`}
                 alt={item.nombre_producto} width={96} height={96} unoptimized
                 className="w-full h-full object-cover"
                 onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.jpg"; }}
