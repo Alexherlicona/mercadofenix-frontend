@@ -605,7 +605,7 @@ export default function MisProductos() {
         ) : (
           <div className="space-y-2">
             {filtrados.map(p => {
-              const fotoUrl = p.fotos?.[0]?.url.startsWith("http") ? p.fotos[0].url : `${API_URL}${p.fotos[0].url}`;
+              const fotoUrl = p.fotos?.[0]?.url ? `${API_URL}${p.fotos[0].url}` : null;
               const pFinal  = p.porcentaje_descuento > 0 ? (p.precio*(1-p.porcentaje_descuento/100)).toFixed(2) : null;
               return (
                 <div key={p.id} className="flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.05] border border-white/[0.06] hover:border-white/[0.12] rounded-2xl p-3 transition-all">
