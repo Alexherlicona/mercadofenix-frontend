@@ -10,7 +10,7 @@ import {
   ArrowDownRight, Minus, Activity
 } from "lucide-react";
 
-const API_URL = "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 function getToken() { return typeof window !== "undefined" ? localStorage.getItem("vendedor_token") : null; }
 function authHeaders() { const t = getToken(); return t ? { Authorization: `Bearer ${t}` } : {}; }
 
