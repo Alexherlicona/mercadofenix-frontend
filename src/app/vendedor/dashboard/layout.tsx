@@ -83,36 +83,38 @@ export default function VendedorLayout({ children }: { children: React.ReactNode
       )}
 
       {/* ── Sidebar ──────────────────────────────────────────────────────── */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-60 flex flex-col
+      {/* Ancho ampliado: w-72 en móvil (antes w-60), w-64 desde lg+ para no robar
+          demasiado espacio al contenido en desktop */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-72 lg:w-64 flex flex-col
         bg-[#0f0f1a] border-r border-white/[0.06]
         transition-transform duration-300 lg:translate-x-0
         ${open ? "translate-x-0" : "-translate-x-full"}`}>
 
         {/* Logo */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06] flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-5 border-b border-white/[0.06] flex-shrink-0">
           <div>
-            <p className="text-sm font-black bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent tracking-tight">
+            <p className="text-base sm:text-lg font-black bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent tracking-tight">
               MERCADO FÉNIX
             </p>
-            <p className="text-[10px] text-gray-600 uppercase tracking-widest mt-0.5">Panel vendedor</p>
+            <p className="text-xs text-gray-600 uppercase tracking-widest mt-0.5">Panel vendedor</p>
           </div>
           <button onClick={() => setOpen(false)} className="lg:hidden text-gray-600 hover:text-white transition">
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Perfil compacto */}
         {vendedor && (
-          <div className="px-4 py-3 border-b border-white/[0.06] flex-shrink-0">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-600 to-red-700 flex items-center justify-center flex-shrink-0 overflow-hidden">
+          <div className="px-4 py-4 border-b border-white/[0.06] flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-600 to-red-700 flex items-center justify-center flex-shrink-0 overflow-hidden">
                 {vendedor.logo_url
                   ? <img src={vendedor.logo_url?.startsWith("http") ? vendedor.logo_url: `${API_URL}${vendedor.logo_url}`} className="w-full h-full object-cover" />
-                  : <Store className="w-4 h-4 text-white" />}
+                  : <Store className="w-5 h-5 text-white" />}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-white truncate">{vendedor.nombre_tienda}</p>
-                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${planColor}`}>
+                <p className="text-sm font-bold text-white truncate">{vendedor.nombre_tienda}</p>
+                <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${planColor}`}>
                   {planIcon} {plan.charAt(0).toUpperCase() + plan.slice(1)}
                 </span>
               </div>
@@ -121,7 +123,7 @@ export default function VendedorLayout({ children }: { children: React.ReactNode
         )}
 
         {/* Nav con scroll */}
-        <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
+        <nav className="flex-1 overflow-y-auto py-3 px-2.5 space-y-1">
           {MENU.map(item => {
             const Icon    = item.icon;
             const activo  = pathname === item.href || (item.href !== "/vendedor/dashboard" && pathname.startsWith(item.href));
@@ -129,28 +131,28 @@ export default function VendedorLayout({ children }: { children: React.ReactNode
             return (
               <button key={item.href}
                 onClick={() => { router.push(item.href); setOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium transition-all
+                className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium transition-all
                   ${activo
                     ? "bg-orange-500/15 text-orange-300 border border-orange-500/20"
                     : "text-gray-500 hover:text-gray-200 hover:bg-white/[0.04]"}`}>
-                <Icon className={`w-3.5 h-3.5 flex-shrink-0 ${activo ? "text-orange-400" : ""}`} />
+                <Icon className={`w-4.5 h-4.5 flex-shrink-0 ${activo ? "text-orange-400" : ""}`} />
                 <span className="flex-1 text-left">{item.title}</span>
                 {badge > 0 && (
-                  <span className="bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="bg-red-500 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0">
                     {badge > 9 ? "9+" : badge}
                   </span>
                 )}
-                {activo && <ChevronRight className="w-3 h-3 text-orange-500/40 flex-shrink-0" />}
+                {activo && <ChevronRight className="w-3.5 h-3.5 text-orange-500/40 flex-shrink-0" />}
               </button>
             );
           })}
         </nav>
 
         {/* Logout */}
-        <div className="p-2 border-t border-white/[0.06] flex-shrink-0">
+        <div className="p-2.5 border-t border-white/[0.06] flex-shrink-0">
           <button onClick={logout}
-            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-all">
-            <LogOut className="w-3.5 h-3.5" />
+            className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-all">
+            <LogOut className="w-4.5 h-4.5" />
             Cerrar sesión
           </button>
         </div>
@@ -158,22 +160,23 @@ export default function VendedorLayout({ children }: { children: React.ReactNode
 
       {/* ── Main ─────────────────────────────────────────────────────────── */}
       {/* w-full asegura que este contenedor nunca dependa del ancho "sobrante"
-          que el navegador calcule si el sidebar fixed llegara a contar en el layout */}
-      <div className="flex-1 w-full min-w-0 lg:ml-60 flex flex-col min-h-screen">
+          que el navegador calcule si el sidebar fixed llegara a contar en el layout.
+          ml ajustado a lg:ml-64 para coincidir con el nuevo ancho del sidebar en desktop */}
+      <div className="flex-1 w-full min-w-0 lg:ml-64 flex flex-col min-h-screen">
 
         {/* Top bar móvil */}
-        <header className="sticky top-0 z-30 bg-[#0a0a12]/95 backdrop-blur-sm border-b border-white/[0.06] px-4 py-3 flex items-center gap-3 lg:hidden">
+        <header className="sticky top-0 z-30 bg-[#0a0a12]/95 backdrop-blur-sm border-b border-white/[0.06] px-4 py-3.5 flex items-center gap-3 lg:hidden">
           <button onClick={() => setOpen(true)} className="text-orange-400">
-            <Menu className="w-5 h-5" />
+            <Menu className="w-6 h-6" />
           </button>
-          <p className="flex-1 text-sm font-bold bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
+          <p className="flex-1 text-base font-bold bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
             MERCADO FÉNIX
           </p>
           {noLeidos > 0 && (
             <button onClick={() => router.push("/vendedor/dashboard/pedidos")}
-              className="flex items-center gap-1.5 bg-red-500/15 border border-red-500/20 rounded-full px-2.5 py-1">
+              className="flex items-center gap-1.5 bg-red-500/15 border border-red-500/20 rounded-full px-3 py-1.5">
               <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse" />
-              <span className="text-red-400 text-[10px] font-bold">{noLeidos} nuevo{noLeidos > 1 ? "s" : ""}</span>
+              <span className="text-red-400 text-xs font-bold">{noLeidos} nuevo{noLeidos > 1 ? "s" : ""}</span>
             </button>
           )}
         </header>
