@@ -71,7 +71,11 @@ export default function VendedorLayout({ children }: { children: React.ReactNode
   const planIcon  = PLAN_ICON[plan]  || "⚡";
 
   return (
-    <div className="min-h-screen bg-[#0a0a12] flex">
+    // overflow-x-hidden aquí contiene cualquier desbordamiento del sidebar
+    // "fixed" + transform en móvil, que en algunos navegadores (Safari iOS,
+    // WebViews Android) puede seguir agregando ancho al documento aunque
+    // el sidebar esté visualmente fuera de pantalla.
+    <div className="min-h-screen bg-[#0a0a12] flex overflow-x-hidden">
 
       {/* ── Backdrop mobile ──────────────────────────────────────────────── */}
       {open && (
@@ -153,7 +157,9 @@ export default function VendedorLayout({ children }: { children: React.ReactNode
       </aside>
 
       {/* ── Main ─────────────────────────────────────────────────────────── */}
-      <div className="flex-1 lg:ml-60 flex flex-col min-h-screen">
+      {/* w-full asegura que este contenedor nunca dependa del ancho "sobrante"
+          que el navegador calcule si el sidebar fixed llegara a contar en el layout */}
+      <div className="flex-1 w-full min-w-0 lg:ml-60 flex flex-col min-h-screen">
 
         {/* Top bar móvil */}
         <header className="sticky top-0 z-30 bg-[#0a0a12]/95 backdrop-blur-sm border-b border-white/[0.06] px-4 py-3 flex items-center gap-3 lg:hidden">
@@ -172,7 +178,7 @@ export default function VendedorLayout({ children }: { children: React.ReactNode
           )}
         </header>
 
-        <main className="flex-1 p-4 md:p-6">
+        <main className="flex-1 w-full min-w-0 p-4 md:p-6 overflow-x-hidden">
           {children}
         </main>
       </div>
