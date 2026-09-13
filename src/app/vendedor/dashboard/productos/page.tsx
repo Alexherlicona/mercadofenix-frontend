@@ -250,7 +250,7 @@ function ModalCompartir({ producto, vendedor, onClose }: { producto: Producto; v
             <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
               <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-800 flex-shrink-0">
                 {producto.fotos?.[0]?.url
-                  ? <img src={ producto.fotos[0].url.startsWith("http") ? producto.fotos[0].url: `${API_URL}${producto.fotos[0].url}`} className="w-full h-full object-cover" />
+                  ? <img src={producto.fotos[0].url.startsWith("http") ? producto.fotos[0].url : `${API_URL}${producto.fotos[0].url}`} className="w-full h-full object-cover" />
                   : <div className="w-full h-full flex items-center justify-center"><ImageIcon className="w-5 h-5 text-gray-600"/></div>}
               </div>
               <div className="flex-1 min-w-0">
@@ -605,7 +605,7 @@ export default function MisProductos() {
         ) : (
           <div className="space-y-2">
             {filtrados.map(p => {
-              const fotoUrl = p.fotos?.[0]?.url ? `${API_URL}${p.fotos[0].url}` : null;
+              const fotoUrl = p.fotos?.[0]?.url.startsWith("http") ? p.fotos[0].url : `${API_URL}${p.fotos[0].url}`;
               const pFinal  = p.porcentaje_descuento > 0 ? (p.precio*(1-p.porcentaje_descuento/100)).toFixed(2) : null;
               return (
                 <div key={p.id} className="flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.05] border border-white/[0.06] hover:border-white/[0.12] rounded-2xl p-3 transition-all">
@@ -891,7 +891,7 @@ export default function MisProductos() {
                                 className={`relative aspect-square rounded-xl overflow-hidden bg-gray-800/80 cursor-grab active:cursor-grabbing select-none transition-all
                                   ${dragExist.hov===i?"ring-2 ring-orange-500 scale-[1.04]":""}
                                   ${i===0&&!marc?"ring-2 ring-yellow-500/50":""}`}>
-                                <img src={`${API_URL}${foto.url}`} alt="" className={`w-full h-full object-cover pointer-events-none transition ${marc?"opacity-20 grayscale":""}`}/>
+                                <img src={`${API_URL}${foto.url.startsWith("http") ? foto.url : foto.url}`} alt="" className={`w-full h-full object-cover pointer-events-none transition ${marc?"opacity-20 grayscale":""}`}/>
                                 {i===0&&!marc && <div className="absolute top-1 left-1 bg-yellow-500 text-black text-[8px] font-black px-1.5 py-0.5 rounded-md pointer-events-none">PRINCIPAL</div>}
                                 <button onClick={()=>setFotosAEliminar(prev=>{const s=new Set(prev);s.has(foto.id)?s.delete(foto.id):s.add(foto.id);return s;})}
                                   className={`absolute top-1 right-1 p-1.5 rounded-lg transition shadow-lg ${marc?"bg-green-600 hover:bg-green-500":"bg-black/60 hover:bg-red-600"}`}>
