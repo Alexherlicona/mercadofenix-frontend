@@ -163,7 +163,7 @@ function ProductosContent() {
               </button>
               <div className="flex items-center px-3 py-2 bg-orange-50 rounded-xl border border-orange-100">
                 <Link href="/fenix/carrito"
-                  className="flex-shrink-0 relative p-2.5 rounded-2xl bg-orange-50 hover:bg-orange-100 border border-orange-100 transition-all hover:shadow-sm active:scale-95">
+                  >
                   <CartIcon />
                 </Link>
               </div>
