@@ -108,7 +108,7 @@ export default function TiendasPage() {
               <span className="text-sm text-gray-400">({tiendasFiltradas.length})</span>
               <div className="flex items-center px-3 py-2 bg-orange-100 rounded-xl hover:bg-orange-200 transition cursor-pointer flex-shrink-0">
                 <Link href="/fenix/carrito"
-                   className="flex-shrink-0 relative p-2.5 rounded-2xl bg-orange-50 hover:bg-orange-100 border border-orange-100 transition-all hover:shadow-sm active:scale-95">
+                   >
                   <CartIcon />
                 </Link>
               </div>
