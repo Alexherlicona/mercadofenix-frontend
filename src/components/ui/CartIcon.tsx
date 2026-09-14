@@ -1,21 +1,24 @@
-// components/ui/CartIcon.tsx
+// src/components/ui/CartIcon.tsx
 "use client";
 
-import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 import { useCartCount } from "@/lib/useCartCount";
 
+// CartIcon solo exporta el icono + badge — el <Link> lo pone el padre (header, etc.)
 export default function CartIcon() {
   const count = useCartCount();
 
   return (
-    <Link href="/fenix/carrito" className="">
-      <ShoppingCart className="w-6 h-6 text-gray-700" />
+    // relative aquí para que el badge absolute se ancle a este contenedor
+    <span className="relative inline-flex items-center justify-center">
+      <ShoppingCart className="w-5 h-5 text-orange-600" />
       {count > 0 && (
-        <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-          {count}
+        <span className="absolute -top-2.5 -right-2.5 min-w-[18px] h-[18px] px-1
+          bg-red-500 text-white text-[10px] font-black rounded-full
+          flex items-center justify-center leading-none shadow-sm">
+          {count > 99 ? "99+" : count}
         </span>
       )}
-    </Link>
+    </span>
   );
 }
