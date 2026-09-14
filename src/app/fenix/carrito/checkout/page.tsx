@@ -9,10 +9,17 @@ import {
   ArrowLeft, MapPin, Truck, Store, Building2,
   Banknote, CreditCard, ChevronRight, ChevronDown,
   CheckCircle2, Loader2, AlertCircle, Plus, X,
-  ShoppingBag, User, Lock, Phone
+  ShoppingBag, User, Lock, Phone, Package
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+// ── Helper URL imágenes ───────────────────────────────────────────────────────
+// Evita el bug de armar "${API_URL}undefined" cuando no hay imagen_principal.
+function imgUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  return url.startsWith("http") ? url : `${API_URL}${url}`;
+}
 
 // ─── TIPOS ─────────────────────────────────────────────────────────────────────
 interface CarritoItem {
@@ -130,6 +137,34 @@ function StepIndicator({ step, total }: { step: number; total: number }) {
           }`}
         />
       ))}
+    </div>
+  );
+}
+
+// ── Miniatura de producto con fallback visual si no hay imagen ────────────────
+function ProductoThumb({ src, alt, size = 48 }: { src: string | null; alt: string; size?: number }) {
+  const [fallo, setFallo] = useState(false);
+  if (!src || fallo) {
+    return (
+      <div
+        style={{ width: size, height: size }}
+        className="rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0"
+      >
+        <Package className="w-1/2 h-1/2 text-gray-300" />
+      </div>
+    );
+  }
+  return (
+    <div style={{ width: size, height: size }} className="rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+      <Image
+        src={src}
+        alt={alt}
+        width={size}
+        height={size}
+        unoptimized
+        onError={() => setFallo(true)}
+        className="w-full h-full object-cover"
+      />
     </div>
   );
 }
@@ -472,24 +507,26 @@ export default function CheckoutPage() {
 
   // ─── CHECKOUT PRINCIPAL ──────────────────────────────────────────────────────
   return (
-    <div className="mf-body-pad min-h-screen bg-gray-50 pb-36 lg:pb-10">
+    // pb-44 (antes pb-36): deja espacio suficiente para que el último elemento
+    // no quede tapado por CTA + navbar apilados en móvil
+    <div className="mf-body-pad min-h-screen bg-gray-50 pb-44 lg:pb-10">
 
       {/* Header */}
       <div className="sticky top-0 z-40 bg-white border-b border-gray-100 shadow-sm">
-        <div className="mf-container py-4">
+        <div className="mf-container py-3.5 sm:py-4">
           <div className="lg:max-w-5xl lg:mx-auto">
             <div className="flex items-center gap-3 mb-3">
-              <button onClick={() => paso > 1 ? setPaso((paso - 1) as 1 | 2 | 3) : router.back()} className="p-2 rounded-full hover:bg-gray-100 transition-colors">
+              <button onClick={() => paso > 1 ? setPaso((paso - 1) as 1 | 2 | 3) : router.back()} className="p-2 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors flex-shrink-0">
                 <ArrowLeft className="w-5 h-5 text-gray-700" />
               </button>
-              <div className="flex-1">
-                <h1 className="font-black text-lg text-gray-900 leading-none">Checkout</h1>
-                <p className="text-xs text-gray-500 mt-0.5">
+              <div className="flex-1 min-w-0">
+                <h1 className="font-black text-base sm:text-lg text-gray-900 leading-none">Checkout</h1>
+                <p className="text-xs text-gray-500 mt-0.5 truncate">
                   Paso {paso} de 3 —{" "}
                   {paso === 1 ? "Entrega" : paso === 2 ? "Método de pago" : "Confirmar pedido"}
                 </p>
               </div>
-              <span className="font-black text-orange-600 text-lg lg:hidden">L{total.toFixed(2)}</span>
+              <span className="font-black text-orange-600 text-base sm:text-lg lg:hidden flex-shrink-0">L{total.toFixed(2)}</span>
             </div>
             <StepIndicator step={paso} total={3} />
           </div>
@@ -510,21 +547,21 @@ export default function CheckoutPage() {
 
             {/* Saludo al cliente */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
                 <User className="w-5 h-5 text-orange-600" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs text-gray-500">Comprando como</p>
-                <p className="font-bold text-gray-900">{cliente.nombres} {cliente.apellidos}</p>
+                <p className="font-bold text-gray-900 truncate">{cliente.nombres} {cliente.apellidos}</p>
                 <p className="text-xs text-gray-500 flex items-center gap-1">
-                  <Phone className="w-3 h-3" /> {cliente.telefono}
+                  <Phone className="w-3 h-3 flex-shrink-0" /> {cliente.telefono}
                 </p>
               </div>
             </div>
 
             {/* Opciones de entrega */}
             <div>
-              <h2 className="font-black text-gray-900 text-base mb-3">¿Cómo quieres recibir tu pedido?</h2>
+              <h2 className="font-black text-gray-900 text-base sm:text-lg mb-3">¿Cómo quieres recibir tu pedido?</h2>
               <div className="space-y-2.5">
                 {ENTREGA_OPCIONES.map((op) => {
                   const Icon = op.icon;
@@ -533,25 +570,25 @@ export default function CheckoutPage() {
                     <button
                       key={op.id}
                       onClick={() => setTipoEntrega(op.id)}
-                      className={`w-full text-left p-4 rounded-2xl border-2 transition-all ${
+                      className={`w-full text-left p-4 rounded-2xl border-2 transition-all active:scale-[0.99] ${
                         activa
                           ? "border-orange-500 bg-orange-50"
                           : "border-gray-200 bg-white hover:border-gray-300"
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                        <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${
                           activa ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600"
                         }`}>
                           <Icon className="w-5 h-5" />
                         </div>
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <p className={`font-bold ${activa ? "text-orange-700" : "text-gray-900"}`}>
                             {op.titulo}
                           </p>
-                          <p className="text-xs text-gray-500">{op.desc}</p>
+                          <p className="text-xs text-gray-500 truncate">{op.desc}</p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right flex-shrink-0">
                           {op.costo > 0 ? (
                             <span className="text-sm font-bold text-gray-700">+L{op.costo}</span>
                           ) : (
@@ -573,7 +610,7 @@ export default function CheckoutPage() {
             {/* Bloque de dirección — solo si domicilio */}
             {tipoEntrega === "domicilio" && (
               <div className="space-y-3">
-                <h2 className="font-black text-gray-900 text-base">¿A dónde te lo enviamos?</h2>
+                <h2 className="font-black text-gray-900 text-base sm:text-lg">¿A dónde te lo enviamos?</h2>
 
                 {/* Direcciones guardadas */}
                 {direcciones.length > 0 && !usarNuevaDireccion && (
@@ -582,7 +619,7 @@ export default function CheckoutPage() {
                       <button
                         key={dir.id}
                         onClick={() => setDireccionSeleccionada(dir.id)}
-                        className={`w-full text-left p-4 rounded-2xl border-2 transition-all ${
+                        className={`w-full text-left p-4 rounded-2xl border-2 transition-all active:scale-[0.99] ${
                           direccionSeleccionada === dir.id
                             ? "border-orange-500 bg-orange-50"
                             : "border-gray-200 bg-white hover:border-gray-300"
@@ -612,7 +649,7 @@ export default function CheckoutPage() {
                     ))}
                     <button
                       onClick={() => { setUsarNuevaDireccion(true); setDireccionSeleccionada(null); }}
-                      className="w-full py-3 border-2 border-dashed border-gray-300 hover:border-orange-400 rounded-2xl text-gray-600 hover:text-orange-600 font-semibold text-sm flex items-center justify-center gap-2 transition-colors"
+                      className="w-full py-3 border-2 border-dashed border-gray-300 hover:border-orange-400 active:scale-[0.99] rounded-2xl text-gray-600 hover:text-orange-600 font-semibold text-sm flex items-center justify-center gap-2 transition-all"
                     >
                       <Plus className="w-4 h-4" /> Usar otra dirección
                     </button>
@@ -768,7 +805,7 @@ export default function CheckoutPage() {
         ══════════════════════════════════════════ */}
         {paso === 2 && (
           <div className="space-y-5 animate-fade-in">
-            <h2 className="font-black text-gray-900 text-base">¿Cómo vas a pagar?</h2>
+            <h2 className="font-black text-gray-900 text-base sm:text-lg">¿Cómo vas a pagar?</h2>
 
             <div className="space-y-3">
               {PAGO_OPCIONES.map((op) => {
@@ -778,21 +815,21 @@ export default function CheckoutPage() {
                   <button
                     key={op.id}
                     onClick={() => setMetodoPago(op.id)}
-                    className={`w-full text-left p-4 rounded-2xl border-2 transition-all ${
+                    className={`w-full text-left p-4 rounded-2xl border-2 transition-all active:scale-[0.99] ${
                       activa ? "border-orange-500 bg-orange-50" : "border-gray-200 bg-white hover:border-gray-300"
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                      <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
                         activa ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600"
                       }`}>
-                        <Icon className="w-6 h-6" />
+                        <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <p className={`font-bold ${activa ? "text-orange-700" : "text-gray-900"}`}>
                           {op.titulo}
                         </p>
-                        <p className="text-xs text-gray-500">{op.desc}</p>
+                        <p className="text-xs text-gray-500 truncate">{op.desc}</p>
                       </div>
                       <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
                         activa ? "border-orange-500" : "border-gray-300"
@@ -828,10 +865,10 @@ export default function CheckoutPage() {
             {/* Próximamente tarjetas */}
             <div className="p-4 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 opacity-60">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gray-200 flex items-center justify-center">
-                  <CreditCard className="w-6 h-6 text-gray-400" />
+                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gray-200 flex items-center justify-center flex-shrink-0">
+                  <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="font-bold text-gray-500 text-sm">Tarjeta de crédito / débito</p>
                   <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-medium">Próximamente</span>
                 </div>
@@ -859,7 +896,7 @@ export default function CheckoutPage() {
         ══════════════════════════════════════════ */}
         {paso === 3 && (
           <div className="space-y-4 animate-fade-in">
-            <h2 className="font-black text-gray-900 text-base">Revisa tu pedido</h2>
+            <h2 className="font-black text-gray-900 text-base sm:text-lg">Revisa tu pedido</h2>
 
             {/* Items */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -871,16 +908,8 @@ export default function CheckoutPage() {
               <div className="divide-y divide-gray-50">
                 {items.map((item) => (
                   <div key={item.id} className="flex gap-3 p-3 items-center">
-                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                      <Image
-                        src={item.imagen_principal ? `${API_URL}${item.imagen_principal}` : "/placeholder.jpg"}
-                        alt={item.nombre_producto}
-                        width={48}
-                        height={48}
-                        unoptimized
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+                    {/* Miniatura con URL normalizada + fallback si falla la carga */}
+                    <ProductoThumb src={imgUrl(item.imagen_principal)} alt={item.nombre_producto} size={52} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-gray-900 line-clamp-1">{item.nombre_producto}</p>
                       <p className="text-xs text-gray-500">
@@ -902,7 +931,7 @@ export default function CheckoutPage() {
               {/* Entrega */}
               <div className="p-4 flex items-start gap-3">
                 {tipoEntrega === "domicilio" ? <Truck className="w-4 h-4 text-gray-400 mt-0.5" /> : tipoEntrega === "tienda" ? <Store className="w-4 h-4 text-gray-400 mt-0.5" /> : <Building2 className="w-4 h-4 text-gray-400 mt-0.5" />}
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <p className="text-xs text-gray-500">Entrega</p>
                   <p className="text-sm font-semibold text-gray-900">
                     {tipoEntrega === "domicilio" ? "A domicilio" : tipoEntrega === "tienda" ? "Retiro en tienda" : "Oficina Mercado Fénix"}
@@ -910,17 +939,17 @@ export default function CheckoutPage() {
                   {tipoEntrega === "domicilio" && (() => {
                     const dir = direcciones.find(d => d.id === direccionSeleccionada);
                     return dir ? (
-                      <p className="text-xs text-gray-500">{dir.nombre_direccion} — {dir.municipio}, {dir.departamento}</p>
+                      <p className="text-xs text-gray-500 truncate">{dir.nombre_direccion} — {dir.municipio}, {dir.departamento}</p>
                     ) : nuevaDirForm.direccion_exacta ? (
-                      <p className="text-xs text-gray-500">{nuevaDirForm.municipio}, {nuevaDirForm.departamento}</p>
+                      <p className="text-xs text-gray-500 truncate">{nuevaDirForm.municipio}, {nuevaDirForm.departamento}</p>
                     ) : null;
                   })()}
                 </div>
               </div>
               {/* Pago */}
               <div className="p-4 flex items-center gap-3">
-                <Banknote className="w-4 h-4 text-gray-400" />
-                <div className="flex-1">
+                <Banknote className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
                   <p className="text-xs text-gray-500">Método de pago</p>
                   <p className="text-sm font-semibold text-gray-900 capitalize">{metodoPago}</p>
                 </div>
@@ -928,8 +957,8 @@ export default function CheckoutPage() {
               {/* Nota */}
               {notaCliente && (
                 <div className="p-4 flex items-start gap-3">
-                  <ChevronRight className="w-4 h-4 text-gray-400 mt-0.5" />
-                  <div>
+                  <ChevronRight className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="min-w-0">
                     <p className="text-xs text-gray-500">Nota al vendedor</p>
                     <p className="text-sm text-gray-700">{notaCliente}</p>
                   </div>
@@ -982,16 +1011,7 @@ export default function CheckoutPage() {
               <div className="divide-y divide-gray-50 max-h-64 overflow-y-auto">
                 {items.map((item) => (
                   <div key={item.id} className="flex gap-3 px-5 py-3 items-center">
-                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                      <Image
-                        src={item.imagen_principal ? `${API_URL}${item.imagen_principal}` : "/placeholder.jpg"}
-                        alt={item.nombre_producto}
-                        width={40}
-                        height={40}
-                        unoptimized
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+                    <ProductoThumb src={imgUrl(item.imagen_principal)} alt={item.nombre_producto} size={44} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-gray-900 line-clamp-1">{item.nombre_producto}</p>
                       <p className="text-xs text-gray-500">
@@ -1076,13 +1096,26 @@ export default function CheckoutPage() {
       </div>{/* fin mf-container */}
 
       {/* ── BARRA INFERIOR FIJA — solo móvil ────────────────────────────────────── */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-2xl lg:hidden">
-        <div className="mf-container py-4">
+      {/*
+        FIX: antes esta barra usaba "bottom-0", exactamente la misma posición
+        que el MobileNav global (Hogar/Tiendas/Productos/Favoritos/Ya), así que
+        el nav quedaba pintado encima y tapaba el botón.
+
+        "bottom-16" la sube 64px (altura típica de una bottom-nav de 5 íconos).
+        Si tu MobileNav mide distinto, ajusta este valor para que calce exacto
+        justo arriba del nav — lo ideal es que ambos compartan una sola
+        constante de altura en el proyecto para no tener que sincronizarlo a mano.
+      */}
+      <div
+        className="fixed bottom-16 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-[0_-8px_24px_-8px_rgba(0,0,0,0.15)] lg:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
+        <div className="mf-container py-3.5">
           {paso < 3 ? (
             <button
               onClick={() => setPaso((paso + 1) as 1 | 2 | 3)}
               disabled={paso === 1 ? !paso1Valido : paso === 2 ? !paso2Valido : false}
-              className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+              className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3.5 sm:py-4 rounded-2xl font-bold text-base sm:text-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-md shadow-orange-900/10"
             >
               Continuar
               <ChevronRight className="w-5 h-5" />
@@ -1091,7 +1124,7 @@ export default function CheckoutPage() {
             <button
               onClick={crearPedido}
               disabled={procesando}
-              className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:opacity-60 text-white py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg transition-all active:scale-[0.98]"
+              className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:opacity-60 text-white py-3.5 sm:py-4 rounded-2xl font-bold text-base sm:text-lg flex items-center justify-center gap-2 shadow-md shadow-emerald-900/10 transition-all active:scale-[0.98]"
             >
               {procesando ? (
                 <>
