@@ -11,8 +11,8 @@ import {
   Download, Lock, Unlock, FileText, Zap, AlertCircle
 } from "lucide-react";
 
-const API_URL = "http://localhost:8000";
-const WS_URL  = "ws://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const WS_URL  = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000";
 
 function vendedorHeaders(): HeadersInit {
   const token = localStorage.getItem("vendedor_token");
