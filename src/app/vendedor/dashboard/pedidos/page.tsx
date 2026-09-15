@@ -14,6 +14,15 @@ import {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const WS_URL  = process.env.NEXT_PUBLIC_WS_URL || "http://localhost:8000";
 
+// ── FIX: WebSocket() exige esquema ws:// o wss://, nunca http:// o https://.
+// Antes se usaba WS_URL tal cual (http://... o https://...), lo que hacía
+// que `new WebSocket(...)` lanzara un SyntaxError inmediato y la conexión
+// jamás llegara a abrirse — por eso el botón de enviar no hacía nada.
+function buildWsUrl(path: string) {
+  const wsBase = WS_URL.replace(/^http/, "ws"); // http->ws, https->wss
+  return `${wsBase}${path}`;
+}
+
 function vendedorHeaders(): HeadersInit {
   const token = localStorage.getItem("vendedor_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -281,6 +290,8 @@ function ChatVendedor({ sala, onClose, onMensajeLeido }: {
   const [habilitandoDescarga, setHabilitandoDescarga] = useState(false);
   const [estadoActual, setEstadoActual]     = useState(sala.pedido_estado);
   const [descargaHabilitada, setDescargaHabilitada] = useState(false);
+  const [wsListo, setWsListo]               = useState(false);
+  const [enviando, setEnviando]             = useState(false);
   const wsRef    = useRef<WebSocket | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef  = useRef<HTMLInputElement>(null);
@@ -315,19 +326,31 @@ function ChatVendedor({ sala, onClose, onMensajeLeido }: {
       setCargandoDetalle(false);
       setCargando(false);
 
-      const ws = new WebSocket(`${WS_URL}/api/chat/ws/${sala.sala_id}?token=${token}`);
-      wsRef.current = ws;
-      ws.onmessage = (e) => {
-        const data = JSON.parse(e.data);
-        if (data.tipo === "mensaje") {
-          setMensajes(prev => prev.find(m => m.id === data.id) ? prev : [...prev, data]);
-          setTyping(false);
-          onMensajeLeido(sala.sala_id);
-        } else if (data.tipo === "typing" && data.remitente_tipo === "cliente") {
-          setTyping(true);
-          setTimeout(() => setTyping(false), 3000);
-        }
-      };
+      // FIX: construir la URL con esquema ws/wss (nunca http/https) usando buildWsUrl.
+      // Además, envolver en try/catch: si por cualquier razón el WS no puede
+      // crearse (URL mal formada, red bloqueada, etc.), el chat sigue
+      // funcionando vía el fallback HTTP en enviar().
+      try {
+        const ws = new WebSocket(buildWsUrl(`/api/chat/ws/${sala.sala_id}?token=${token}`));
+        wsRef.current = ws;
+        ws.onopen = () => setWsListo(true);
+        ws.onclose = () => setWsListo(false);
+        ws.onerror = () => setWsListo(false);
+        ws.onmessage = (e) => {
+          const data = JSON.parse(e.data);
+          if (data.tipo === "mensaje") {
+            setMensajes(prev => prev.find(m => m.id === data.id) ? prev : [...prev, data]);
+            setTyping(false);
+            onMensajeLeido(sala.sala_id);
+          } else if (data.tipo === "typing" && data.remitente_tipo === "cliente") {
+            setTyping(true);
+            setTimeout(() => setTyping(false), 3000);
+          }
+        };
+      } catch (err) {
+        console.error("No se pudo abrir el WebSocket, se usará HTTP como respaldo:", err);
+        setWsListo(false);
+      }
     };
     init();
     return () => wsRef.current?.close();
@@ -337,10 +360,43 @@ function ChatVendedor({ sala, onClose, onMensajeLeido }: {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [mensajes, typing]);
 
-  const enviar = () => {
-    if (!texto.trim() || wsRef.current?.readyState !== WebSocket.OPEN) return;
-    wsRef.current.send(JSON.stringify({ tipo: "mensaje", contenido: texto.trim() }));
+  // FIX: antes "enviar" dependía 100% del WebSocket y no hacía nada si no
+  // estaba OPEN (el bug reportado). Ahora usa el mismo patrón de fallback
+  // por HTTP que ya tenía habilitarDescarga, contra el endpoint que ya
+  // existe en el backend: POST /api/chat/sala/vendedor/{sala_id}/mensaje
+  const enviar = async () => {
+    const contenido = texto.trim();
+    if (!contenido || enviando) return;
+
+    setEnviando(true);
     setTexto("");
+
+    try {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ tipo: "mensaje", contenido }));
+        // El propio servidor hace broadcast de vuelta a esta sala (incluido
+        // este cliente), así que no lo agregamos aquí para evitar duplicados.
+      } else {
+        // WS no disponible — respaldo por HTTP
+        const res = await fetch(`${API_URL}/api/chat/sala/vendedor/${sala.sala_id}/mensaje`, {
+          method: "POST",
+          headers: { ...vendedorHeaders(), "Content-Type": "application/json" },
+          body: JSON.stringify({ contenido }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setMensajes(prev => prev.find(m => m.id === data.mensaje.id) ? prev : [...prev, data.mensaje]);
+        } else {
+          throw new Error("No se pudo enviar el mensaje");
+        }
+      }
+    } catch (err) {
+      console.error("Error al enviar mensaje:", err);
+      // Restaurar el texto para que el vendedor no lo pierda
+      setTexto(contenido);
+    } finally {
+      setEnviando(false);
+    }
   };
 
   const subirArchivo = async (file: File) => {
@@ -369,6 +425,19 @@ function ChatVendedor({ sala, onClose, onMensajeLeido }: {
         setDetallePedido(prev => prev ? { ...prev, estado: sig.estado } : prev);
         if (wsRef.current?.readyState === WebSocket.OPEN) {
           wsRef.current.send(JSON.stringify({ tipo: "mensaje", contenido: MSG_ESTADO[sig.estado] }));
+        } else {
+          // Fallback HTTP si el WS no está listo
+          try {
+            const resMsj = await fetch(`${API_URL}/api/chat/sala/vendedor/${sala.sala_id}/mensaje`, {
+              method: "POST",
+              headers: { ...vendedorHeaders(), "Content-Type": "application/json" },
+              body: JSON.stringify({ contenido: MSG_ESTADO[sig.estado] }),
+            });
+            if (resMsj.ok) {
+              const msgData = await resMsj.json();
+              setMensajes(prev => [...prev, msgData.mensaje]);
+            }
+          } catch {}
         }
       }
     } finally { setActualizandoEstado(false); }
@@ -449,6 +518,11 @@ function ChatVendedor({ sala, onClose, onMensajeLeido }: {
                     <FileText className="w-2.5 h-2.5" /> Digital
                   </span>
                 )}
+                {/* Indicador de conexión — útil para diagnosticar si el WS cae */}
+                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex items-center gap-1 ${wsListo ? "bg-emerald-500/20 text-emerald-100" : "bg-white/15 text-white/60"}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${wsListo ? "bg-emerald-300" : "bg-white/40"}`} />
+                  {wsListo ? "En vivo" : "Modo básico"}
+                </span>
               </div>
             </div>
             <button onClick={onClose} className="text-white/70 hover:text-white flex-shrink-0 p-1">
@@ -596,9 +670,9 @@ function ChatVendedor({ sala, onClose, onMensajeLeido }: {
               rows={1}
               className="flex-1 resize-none bg-gray-800 border border-gray-700 focus:border-orange-500 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-gray-500 outline-none transition-colors max-h-20"
             />
-            <button onClick={enviar} disabled={!texto.trim()}
+            <button onClick={enviar} disabled={!texto.trim() || enviando}
               className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center flex-shrink-0 self-end disabled:opacity-40 hover:shadow-lg transition-all active:scale-95">
-              <Send className="w-4 h-4 text-white" />
+              {enviando ? <Loader2 className="w-4 h-4 text-white animate-spin" /> : <Send className="w-4 h-4 text-white" />}
             </button>
           </div>
         </div>
