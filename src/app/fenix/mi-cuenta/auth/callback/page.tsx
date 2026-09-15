@@ -88,9 +88,6 @@ function GoogleCallbackContent() {
       <div className="flex items-center gap-3 pt-3 pb-1">
         <h3 className="text-1xl font-black text-gray-900">Productos</h3>
         <div className="flex items-center gap-2">
-          <div className="flex items-center px-3 py-2 bg-orange-50 rounded-xl border border-orange-100">
-            <CartIcon />
-          </div>
           <nav className="hidden lg:flex items-center gap-0.5 flex-shrink-0 ml-1">
             {NAV_LINKS.map(({ href, label }) => {
               const isActive = pathname === href;
