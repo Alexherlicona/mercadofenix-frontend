@@ -96,6 +96,8 @@ function GraficaLinea({ datos, color = "#f97316" }: { datos: { dia: string; tota
 }
 
 // ── Dona SVG ──────────────────────────────────────────────────────────────────
+// El centro usa currentColor para poder cambiar de blanco (tema claro) a
+// oscuro (tema oscuro) igual que el resto de tarjetas, vía className + dark:.
 function Dona({ segmentos }: { segmentos: { label: string; valor: number; color: string }[] }) {
   const total = segmentos.reduce((s, x) => s + x.valor, 0) || 1;
   const r = 40; const cx = 60; const cy = 60; const stroke = 18;
@@ -118,7 +120,7 @@ function Dona({ segmentos }: { segmentos: { label: string; valor: number; color:
         offset += pct;
         return el;
       })}
-      <circle cx={cx} cy={cy} r={r - stroke / 2 - 2} fill="#0c0c14" />
+      <circle cx={cx} cy={cy} r={r - stroke / 2 - 2} fill="currentColor" className="text-white dark:text-[#0c0c14]" />
     </svg>
   );
 }
@@ -131,19 +133,19 @@ function MetricCard({
   icon: any; color: string; trend?: "up" | "down" | "flat"; small?: boolean;
 }) {
   const TrendIcon = trend === "up" ? ArrowUpRight : trend === "down" ? ArrowDownRight : Minus;
-  const trendColor = trend === "up" ? "text-emerald-400" : trend === "down" ? "text-red-400" : "text-gray-500";
+  const trendColor = trend === "up" ? "text-emerald-500 dark:text-emerald-400" : trend === "down" ? "text-red-500 dark:text-red-400" : "text-gray-500";
   return (
-    <div className={`relative overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4 flex flex-col gap-2`}>
+    <div className={`relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-white/[0.07] dark:bg-white/[0.03] dark:shadow-none p-4 flex flex-col gap-2`}>
       <div className={`w-8 h-8 rounded-xl flex items-center justify-center`} style={{ background: `${color}20` }}>
         <Icon className="w-4 h-4" style={{ color }} />
       </div>
       <div>
         <p className="text-[11px] text-gray-500 font-medium">{label}</p>
-        <p className={`font-black text-white ${small ? "text-xl" : "text-2xl"} leading-none mt-0.5`}>{value}</p>
+        <p className={`font-black text-gray-900 dark:text-white ${small ? "text-xl" : "text-2xl"} leading-none mt-0.5`}>{value}</p>
         {sub && (
           <div className="flex items-center gap-1 mt-1">
             {trend && <TrendIcon className={`w-3 h-3 ${trendColor}`} />}
-            <p className={`text-[10px] ${trend ? trendColor : "text-gray-600"}`}>{sub}</p>
+            <p className={`text-[10px] ${trend ? trendColor : "text-gray-400 dark:text-gray-600"}`}>{sub}</p>
           </div>
         )}
       </div>
@@ -153,12 +155,12 @@ function MetricCard({
   );
 }
 
-// ── Color por tipo de sugerencia ──────────────────────────────────────────────
+// ── Color por tipo de sugerencia (claro por defecto, dark: para tema oscuro) ──
 const SUGERENCIA_COLORS: Record<string, { bg: string; border: string; text: string; dot: string }> = {
-  critica:     { bg: "bg-red-950/40",     border: "border-red-500/30",     text: "text-red-300",     dot: "bg-red-500" },
-  alerta:      { bg: "bg-orange-950/40",  border: "border-orange-500/30",  text: "text-orange-300",  dot: "bg-orange-500" },
-  advertencia: { bg: "bg-yellow-950/40",  border: "border-yellow-500/30",  text: "text-yellow-300",  dot: "bg-yellow-500" },
-  info:        { bg: "bg-blue-950/30",    border: "border-blue-500/20",    text: "text-blue-300",    dot: "bg-blue-400" },
+  critica:     { bg: "bg-red-50 dark:bg-red-950/40",       border: "border-red-200 dark:border-red-500/30",       text: "text-red-700 dark:text-red-300",       dot: "bg-red-500" },
+  alerta:      { bg: "bg-orange-50 dark:bg-orange-950/40", border: "border-orange-200 dark:border-orange-500/30", text: "text-orange-700 dark:text-orange-300", dot: "bg-orange-500" },
+  advertencia: { bg: "bg-yellow-50 dark:bg-yellow-950/40", border: "border-yellow-200 dark:border-yellow-500/30", text: "text-yellow-700 dark:text-yellow-300", dot: "bg-yellow-500" },
+  info:        { bg: "bg-blue-50 dark:bg-blue-950/30",     border: "border-blue-200 dark:border-blue-500/20",     text: "text-blue-700 dark:text-blue-300",     dot: "bg-blue-400" },
 };
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -183,7 +185,7 @@ export default function Estadisticas() {
 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (cargando) return (
-    <div className="min-h-screen bg-[#080810] flex items-center justify-center">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#080810] flex items-center justify-center transition-colors">
       <div className="flex flex-col items-center gap-4">
         <div className="relative w-16 h-16">
           <div className="absolute inset-0 rounded-full border-2 border-orange-500/20" />
@@ -211,21 +213,21 @@ export default function Estadisticas() {
 
   // ════════════════════════════════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-[#080810] pb-24">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#080810] pb-24 transition-colors">
 
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-[#080810]/95 backdrop-blur-xl border-b border-white/[0.05]">
+      <div className="sticky top-0 z-30 bg-white/95 dark:bg-[#080810]/95 backdrop-blur-xl border-b border-gray-200 dark:border-white/[0.05] transition-colors">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-4">
           <button onClick={() => router.push("/vendedor/dashboard")}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-500 hover:text-white transition">
+            className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-900 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-white transition">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1">
-            <h1 className="text-lg font-black text-white tracking-tight">Estadísticas</h1>
-            <p className="text-xs text-gray-600">Vista general de tu tienda</p>
+            <h1 className="text-lg font-black text-gray-900 dark:text-white tracking-tight">Estadísticas</h1>
+            <p className="text-xs text-gray-500 dark:text-gray-600">Vista general de tu tienda</p>
           </div>
           <button onClick={() => cargar(true)} disabled={recargando}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-500 hover:text-white transition disabled:opacity-40">
+            className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-900 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-white transition disabled:opacity-40">
             <RefreshCw className={`w-4 h-4 ${recargando ? "animate-spin" : ""}`} />
           </button>
         </div>
@@ -235,16 +237,16 @@ export default function Estadisticas() {
 
         {/* ── Alerta plan vencimiento ──────────────────────────────────────── */}
         {diasRestantes !== null && diasRestantes <= 7 && (
-          <div className={`flex items-start gap-3 px-4 py-3.5 rounded-2xl border ${diasRestantes === 0 ? "bg-red-950/40 border-red-500/30" : "bg-orange-950/40 border-orange-500/30"}`}>
-            <AlertTriangle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${diasRestantes === 0 ? "text-red-400" : "text-orange-400"}`} />
+          <div className={`flex items-start gap-3 px-4 py-3.5 rounded-2xl border ${diasRestantes === 0 ? "bg-red-50 border-red-200 dark:bg-red-950/40 dark:border-red-500/30" : "bg-orange-50 border-orange-200 dark:bg-orange-950/40 dark:border-orange-500/30"}`}>
+            <AlertTriangle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${diasRestantes === 0 ? "text-red-500 dark:text-red-400" : "text-orange-500 dark:text-orange-400"}`} />
             <div className="flex-1">
-              <p className="text-white font-bold text-sm">
+              <p className="text-gray-900 dark:text-white font-bold text-sm">
                 {diasRestantes === 0 ? "Tu plan ha vencido" : `Tu plan vence en ${diasRestantes} día${diasRestantes > 1 ? "s" : ""}`}
               </p>
-              <p className="text-gray-400 text-xs mt-0.5">Renueva para seguir vendiendo sin interrupciones.</p>
+              <p className="text-gray-500 dark:text-gray-400 text-xs mt-0.5">Renueva para seguir vendiendo sin interrupciones.</p>
             </div>
             <button onClick={() => router.push("/vendedor/dashboard/pagos")}
-              className="text-xs font-bold text-orange-400 hover:text-orange-300 transition whitespace-nowrap">
+              className="text-xs font-bold text-orange-500 dark:text-orange-400 hover:text-orange-600 dark:hover:text-orange-300 transition whitespace-nowrap">
               Renovar →
             </button>
           </div>
@@ -301,16 +303,16 @@ export default function Estadisticas() {
         </div>
 
         {/* ── Gráfica de ingresos ───────────────────────────────────────────── */}
-        <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] overflow-hidden">
+        <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-white/[0.07] dark:bg-white/[0.03] dark:shadow-none overflow-hidden">
           <div className="flex items-center justify-between px-5 pt-5 pb-3">
             <div>
-              <h3 className="text-white font-bold text-sm">Ingresos por ventas</h3>
-              <p className="text-gray-600 text-xs mt-0.5">Pedidos entregados · Lempiras</p>
+              <h3 className="text-gray-900 dark:text-white font-bold text-sm">Ingresos por ventas</h3>
+              <p className="text-gray-400 dark:text-gray-600 text-xs mt-0.5">Pedidos entregados · Lempiras</p>
             </div>
-            <div className="flex rounded-xl overflow-hidden border border-white/10">
+            <div className="flex rounded-xl overflow-hidden border border-gray-200 dark:border-white/10">
               {(["7d","30d"] as const).map(p => (
                 <button key={p} onClick={() => setPeriodo(p)}
-                  className={`px-3 py-1.5 text-xs font-bold transition ${periodo === p ? "bg-orange-500 text-black" : "text-gray-500 hover:text-gray-300"}`}>
+                  className={`px-3 py-1.5 text-xs font-bold transition ${periodo === p ? "bg-orange-500 text-black" : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"}`}>
                   {p === "7d" ? "7 días" : "30 días"}
                 </button>
               ))}
@@ -319,7 +321,7 @@ export default function Estadisticas() {
 
           {/* Valor destacado */}
           <div className="px-5 pb-3">
-            <p className="text-3xl font-black text-white">
+            <p className="text-3xl font-black text-gray-900 dark:text-white">
               L{ingresoPeriodo.toLocaleString("es-HN", { minimumFractionDigits: 2 })}
             </p>
             <p className="text-xs text-gray-500 mt-0.5">
@@ -342,7 +344,7 @@ export default function Estadisticas() {
           {/* Etiquetas de fechas */}
           <div className="flex justify-between px-5 pb-3">
             {[graficaDatos[0], graficaDatos[Math.floor(graficaDatos.length/2)], graficaDatos[graficaDatos.length-1]].map((d, i) => (
-              <p key={i} className="text-[10px] text-gray-600">
+              <p key={i} className="text-[10px] text-gray-400 dark:text-gray-600">
                 {d ? new Date(d.dia + "T00:00:00").toLocaleDateString("es-HN", { day:"numeric", month:"short" }) : ""}
               </p>
             ))}
@@ -353,11 +355,11 @@ export default function Estadisticas() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
           {/* Dona de estados */}
-          <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-5">
-            <h3 className="text-white font-bold text-sm mb-4">Estado de pedidos</h3>
+          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-white/[0.07] dark:bg-white/[0.03] dark:shadow-none p-5">
+            <h3 className="text-gray-900 dark:text-white font-bold text-sm mb-4">Estado de pedidos</h3>
             {pedidos.total === 0 ? (
               <div className="flex flex-col items-center gap-3 py-6 opacity-40">
-                <ShoppingBag className="w-8 h-8 text-gray-600" />
+                <ShoppingBag className="w-8 h-8 text-gray-400 dark:text-gray-600" />
                 <p className="text-xs text-gray-500">Sin pedidos aún</p>
               </div>
             ) : (
@@ -368,11 +370,11 @@ export default function Estadisticas() {
                     <div key={e.estado} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: e.color }} />
-                        <p className="text-xs text-gray-400">{e.estado}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{e.estado}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <p className="text-xs font-bold text-white">{e.total}</p>
-                        <p className="text-[10px] text-gray-600">
+                        <p className="text-xs font-bold text-gray-900 dark:text-white">{e.total}</p>
+                        <p className="text-[10px] text-gray-400 dark:text-gray-600">
                           {pedidos.total > 0 ? `${Math.round(e.total / pedidos.total * 100)}%` : "0%"}
                         </p>
                       </div>
@@ -399,11 +401,11 @@ export default function Estadisticas() {
         </div>
 
         {/* ── Inventario ───────────────────────────────────────────────────── */}
-        <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] overflow-hidden">
+        <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-white/[0.07] dark:bg-white/[0.03] dark:shadow-none overflow-hidden">
           <div className="flex items-center justify-between px-5 pt-5 pb-4">
-            <h3 className="text-white font-bold text-sm">Inventario</h3>
+            <h3 className="text-gray-900 dark:text-white font-bold text-sm">Inventario</h3>
             <button onClick={() => router.push("/vendedor/dashboard/productos")}
-              className="text-xs text-orange-400 hover:text-orange-300 transition font-semibold flex items-center gap-1">
+              className="text-xs text-orange-500 dark:text-orange-400 hover:text-orange-600 dark:hover:text-orange-300 transition font-semibold flex items-center gap-1">
               Ver todos <ChevronRight className="w-3 h-3" />
             </button>
           </div>
@@ -418,9 +420,9 @@ export default function Estadisticas() {
                 { label: "Digitales", val: productos.digitales, color: "#a855f7", icon: Archive },
                 { label: "Sin stock", val: productos.sin_stock, color: "#ef4444", icon: AlertTriangle },
               ].map(({ label, val, color, icon: Icon }) => (
-                <div key={label} className="flex flex-col items-center gap-1.5 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                <div key={label} className="flex flex-col items-center gap-1.5 py-3 rounded-xl bg-gray-50 border border-gray-200 dark:bg-white/[0.03] dark:border-white/[0.06]">
                   <Icon className="w-4 h-4" style={{ color }} />
-                  <p className="text-white font-black text-xl leading-none">{val}</p>
+                  <p className="text-gray-900 dark:text-white font-black text-xl leading-none">{val}</p>
                   <p className="text-[10px] text-gray-500">{label}</p>
                 </div>
               ))}
@@ -433,7 +435,7 @@ export default function Estadisticas() {
                   <span>Estado del inventario físico</span>
                   <span>{productos.fisicos - productos.sin_stock - productos.stock_bajo} con buen stock</span>
                 </div>
-                <div className="h-2.5 rounded-full bg-white/5 overflow-hidden flex gap-0.5">
+                <div className="h-2.5 rounded-full bg-gray-100 dark:bg-white/5 overflow-hidden flex gap-0.5">
                   {productos.fisicos > 0 && (() => {
                     const buenos   = productos.fisicos - productos.sin_stock - productos.stock_bajo;
                     const bajo_pct = (productos.stock_bajo / productos.fisicos) * 100;
@@ -467,10 +469,10 @@ export default function Estadisticas() {
                     return (
                       <div key={c.categoria}>
                         <div className="flex justify-between text-xs mb-1">
-                          <span className="text-gray-400 truncate max-w-[70%]">{c.categoria}</span>
-                          <span className="text-gray-500">{c.total} <span className="text-gray-600">({pct}%)</span></span>
+                          <span className="text-gray-500 dark:text-gray-400 truncate max-w-[70%]">{c.categoria}</span>
+                          <span className="text-gray-500">{c.total} <span className="text-gray-400 dark:text-gray-600">({pct}%)</span></span>
                         </div>
-                        <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                        <div className="h-1.5 rounded-full bg-gray-100 dark:bg-white/5 overflow-hidden">
                           <div className="h-full rounded-full bg-gradient-to-r from-orange-500 to-orange-400 transition-all"
                             style={{ width: `${pct}%` }} />
                         </div>
@@ -485,29 +487,29 @@ export default function Estadisticas() {
 
         {/* ── Top productos más vendidos ────────────────────────────────────── */}
         {productos.top_vendidos.length > 0 && (
-          <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] overflow-hidden">
+          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-white/[0.07] dark:bg-white/[0.03] dark:shadow-none overflow-hidden">
             <div className="flex items-center justify-between px-5 pt-5 pb-4">
-              <h3 className="text-white font-bold text-sm flex items-center gap-2">
+              <h3 className="text-gray-900 dark:text-white font-bold text-sm flex items-center gap-2">
                 <Star className="w-4 h-4 text-yellow-400" /> Top productos
               </h3>
             </div>
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-gray-100 dark:divide-white/[0.04]">
               {productos.top_vendidos.map((p, i) => (
-                <div key={p.id} className="flex items-center gap-3 px-5 py-3 hover:bg-white/[0.02] transition">
-                  <span className={`w-6 text-center text-xs font-black flex-shrink-0 ${i === 0 ? "text-yellow-400" : i === 1 ? "text-gray-300" : i === 2 ? "text-orange-400" : "text-gray-600"}`}>
+                <div key={p.id} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition">
+                  <span className={`w-6 text-center text-xs font-black flex-shrink-0 ${i === 0 ? "text-yellow-500 dark:text-yellow-400" : i === 1 ? "text-gray-500 dark:text-gray-300" : i === 2 ? "text-orange-500 dark:text-orange-400" : "text-gray-400 dark:text-gray-600"}`}>
                     #{i + 1}
                   </span>
-                  <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-800/80 flex-shrink-0">
+                  <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800/80 flex-shrink-0">
                     {p.foto
                       ? <img src={`${API_URL}${p.foto}`} alt={p.nombre} className="w-full h-full object-cover" />
-                      : <div className="w-full h-full flex items-center justify-center"><Package className="w-4 h-4 text-gray-600" /></div>}
+                      : <div className="w-full h-full flex items-center justify-center"><Package className="w-4 h-4 text-gray-400 dark:text-gray-600" /></div>}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-semibold truncate">{p.nombre}</p>
+                    <p className="text-gray-900 dark:text-white text-sm font-semibold truncate">{p.nombre}</p>
                     <p className="text-gray-500 text-xs">{p.categoria}</p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-orange-400 font-black text-sm">{p.ventas} ventas</p>
+                    <p className="text-orange-500 dark:text-orange-400 font-black text-sm">{p.ventas} ventas</p>
                     <p className="text-gray-500 text-xs">L{p.precio.toFixed(2)}</p>
                   </div>
                 </div>
@@ -518,8 +520,8 @@ export default function Estadisticas() {
 
         {/* ── Métodos de pago ──────────────────────────────────────────────── */}
         {pedidos.metodos_pago.length > 0 && (
-          <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-5">
-            <h3 className="text-white font-bold text-sm mb-4">Métodos de pago preferidos</h3>
+          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-white/[0.07] dark:bg-white/[0.03] dark:shadow-none p-5">
+            <h3 className="text-gray-900 dark:text-white font-bold text-sm mb-4">Métodos de pago preferidos</h3>
             <div className="space-y-3">
               {pedidos.metodos_pago.map(m => {
                 const total = pedidos.metodos_pago.reduce((s, x) => s + x.total, 0) || 1;
@@ -529,10 +531,10 @@ export default function Estadisticas() {
                 return (
                   <div key={m.metodo}>
                     <div className="flex justify-between text-xs mb-1.5">
-                      <span className="text-gray-300 font-semibold capitalize">{m.metodo}</span>
+                      <span className="text-gray-700 dark:text-gray-300 font-semibold capitalize">{m.metodo}</span>
                       <span className="text-gray-500">{m.total} pedidos · {pct}%</span>
                     </div>
-                    <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+                    <div className="h-2 rounded-full bg-gray-100 dark:bg-white/5 overflow-hidden">
                       <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
                     </div>
                   </div>
@@ -545,11 +547,11 @@ export default function Estadisticas() {
         {/* ── Estado sin datos ─────────────────────────────────────────────── */}
         {!tieneDatos && (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
-              <BarChart3 className="w-8 h-8 text-gray-700" />
+            <div className="w-16 h-16 rounded-2xl bg-gray-100 border border-gray-200 dark:bg-white/5 dark:border-white/10 flex items-center justify-center">
+              <BarChart3 className="w-8 h-8 text-gray-400 dark:text-gray-700" />
             </div>
             <div>
-              <p className="text-white font-bold">Aún no hay datos que mostrar</p>
+              <p className="text-gray-900 dark:text-white font-bold">Aún no hay datos que mostrar</p>
               <p className="text-gray-500 text-sm mt-1">Las estadísticas aparecerán cuando tengas productos y pedidos.</p>
             </div>
             <button onClick={() => router.push("/vendedor/dashboard/productos/nuevo")}
