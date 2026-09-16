@@ -60,7 +60,7 @@ function Campo({ label, required, children, hint }: {
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-sm font-semibold text-gray-300 flex items-center gap-1">
+      <label className="text-sm font-semibold text-black flex items-center gap-1">
         {label}{required && <span className="text-red-400">*</span>}
       </label>
       {children}
@@ -69,7 +69,7 @@ function Campo({ label, required, children, hint }: {
   );
 }
 
-const inp = "w-full px-4 py-3 bg-gray-900 border border-white/10 rounded-2xl text-sm text-white placeholder-gray-600 outline-none focus:border-orange-500/40 transition";
+const inp = "w-full pl-10 pr-10 py-2.5 rounded-2xl text-sm text-gray-900 placeholder-gray-400 outline-none bg-white border-2: bg-gray-100 border-2 border-gray-200 hover:bg-gra-50 hover:border-orange-400";
 
 // ════════════════════════════════════════════════════════════════════════════
 // Contenido real de la página. Usa useSearchParams, por eso debe ir
@@ -179,10 +179,10 @@ function ReportarTiendaContent() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white pb-10">
+    <div className="min-h-screen bg-gray-50 text-black pb-10">
 
       {/* Header */}
-      <div className="sticky top-0 bg-gray-950/95 backdrop-blur-sm border-b border-white/5 z-10">
+      <div className="sticky top-0 bg-white backdrop-blur-sm border-b border-gray-100">
         <div className="max-w-xl mx-auto px-4 py-3.5 flex items-center gap-3">
           <button onClick={() => paso > 1 ? setPaso(p => (p - 1) as any) : router.back()}
             className="p-2 rounded-xl hover:bg-white/5 transition">
@@ -207,7 +207,7 @@ function ReportarTiendaContent() {
         {paso === 1 && (
           <div className="space-y-5">
             <div>
-              <h2 className="text-lg font-black text-white">¿Qué quieres reportar?</h2>
+              <h2 className="text-lg font-black text-orange-500">¿Qué quieres reportar?</h2>
               <p className="text-sm text-gray-500 mt-1">Selecciona la categoría que mejor describe tu problema.</p>
             </div>
 
@@ -217,13 +217,13 @@ function ReportarTiendaContent() {
                 return (
                   <button key={t.v} onClick={() => setTipo(t.v)}
                     className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl border-2 text-left transition-all
-                      ${tipo === t.v ? t.bg : "bg-gray-900 border-white/5 hover:border-white/15"}`}>
+                      ${tipo === t.v ? t.bg : "bg-gray-50 border-gray-200 hover:border-orange-500"}`}>
                     <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0
-                      ${tipo === t.v ? t.bg : "bg-gray-800"}`}>
-                      <Icon className={`w-5 h-5 ${tipo === t.v ? t.color : "text-gray-500"}`} />
+                      ${tipo === t.v ? t.bg : "bg-gray-50"}`}>
+                      <Icon className={`w-5 h-5 ${tipo === t.v ? t.color : "text-orange-500"}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`font-bold text-sm ${tipo === t.v ? "text-white" : "text-gray-300"}`}>{t.label}</p>
+                      <p className={`font-bold text-sm ${tipo === t.v ? "text-black" : "text-orange-500"}`}>{t.label}</p>
                       <p className="text-xs text-gray-500 mt-0.5">{t.desc}</p>
                     </div>
                     {tipo === t.v && (
@@ -236,14 +236,14 @@ function ReportarTiendaContent() {
 
             {/* Prioridad */}
             <div className="space-y-2">
-              <p className="text-sm font-semibold text-gray-300">Nivel de urgencia</p>
+              <p className="text-sm font-semibold text-orange-500">Nivel de urgencia</p>
               <div className="grid grid-cols-2 gap-2">
                 {PRIORIDADES.map(p => (
                   <button key={p.v} onClick={() => setPrioridad(p.v)}
                     className={`px-3 py-2.5 rounded-xl border-2 text-left transition-all
-                      ${prioridad === p.v ? "border-current bg-white/5" : "border-white/10 hover:border-white/20"}`}
+                      ${prioridad === p.v ? "border-current bg-white/5" : "border-gray-200 hover:border-orange-500"}`}
                     style={prioridad === p.v ? { borderColor: p.color.replace("text-","").replace("-400","") === "red" ? "#f87171" : p.color.includes("amber") ? "#fbbf24" : p.color.includes("blue") ? "#60a5fa" : "#9ca3af" } : {}}>
-                    <p className={`text-xs font-bold ${prioridad === p.v ? p.color : "text-gray-400"}`}>{p.label}</p>
+                    <p className={`text-xs font-bold ${prioridad === p.v ? p.color : "text-orange-500"}`}>{p.label}</p>
                     <p className="text-[10px] text-gray-600 mt-0.5">{p.desc}</p>
                   </button>
                 ))}
@@ -262,7 +262,7 @@ function ReportarTiendaContent() {
         {paso === 2 && (
           <div className="space-y-5">
             <div>
-              <h2 className="text-lg font-black text-white">Cuéntanos qué pasó</h2>
+              <h2 className="text-lg font-black text-orange-500">Cuéntanos qué pasó</h2>
               <p className="text-sm text-gray-500 mt-1">Sé específico para que podamos ayudarte mejor.</p>
             </div>
 
@@ -297,7 +297,7 @@ function ReportarTiendaContent() {
               <div
                 onClick={() => fileRef.current?.click()}
                 className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 border-dashed cursor-pointer transition-all
-                  ${evidencia ? "border-emerald-500/40 bg-emerald-900/10" : "border-white/10 hover:border-orange-500/25 bg-gray-900"}`}>
+                  ${evidencia ? "border-emerald-500/40 bg-emerald-900/10" : "border-white/10 hover:border-orange-800/25 bg-orange-400"}`}>
                 <input ref={fileRef} type="file" className="hidden"
                   accept="image/*,video/*,.pdf"
                   onChange={e => { if (e.target.files?.[0]) seleccionarEvidencia(e.target.files[0]); }} />
@@ -309,7 +309,7 @@ function ReportarTiendaContent() {
                       <Camera className="w-8 h-8 text-emerald-400 flex-shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-white truncate">{evidencia.name}</p>
+                      <p className="text-sm font-semibold text-black truncate">{evidencia.name}</p>
                       <p className="text-xs text-emerald-400">{(evidencia.size / 1024).toFixed(0)} KB · cargado</p>
                     </div>
                     <button onClick={e => { e.stopPropagation(); setEvidencia(null); if (preview) URL.revokeObjectURL(preview); setPreview(null); }}
@@ -319,10 +319,10 @@ function ReportarTiendaContent() {
                   </>
                 ) : (
                   <>
-                    <Upload className="w-6 h-6 text-gray-600 flex-shrink-0" />
+                    <Upload className="w-6 h-6 text-white flex-shrink-0" />
                     <div>
-                      <p className="text-sm text-gray-400 font-semibold">Subir evidencia</p>
-                      <p className="text-xs text-gray-600">Imagen, video o PDF</p>
+                      <p className="text-sm text-white font-semibold">Subir evidencia</p>
+                      <p className="text-xs text-black">Imagen, video o PDF</p>
                     </div>
                   </>
                 )}
@@ -338,7 +338,7 @@ function ReportarTiendaContent() {
 
             <div className="flex gap-2">
               <button onClick={() => setPaso(1)}
-                className="px-5 py-3.5 bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold rounded-2xl text-sm transition">
+                className="px-5 py-3.5 bg-gray-500 hover:bg-gray-700 text-white font-semibold rounded-2xl text-sm transition">
                 ← Atrás
               </button>
               <button onClick={() => {
@@ -360,35 +360,35 @@ function ReportarTiendaContent() {
         {paso === 3 && (
           <div className="space-y-5">
             <div>
-              <h2 className="text-lg font-black text-white">Revisa y envía</h2>
+              <h2 className="text-lg font-black text-orange-500">Revisa y envía</h2>
               <p className="text-sm text-gray-500 mt-1">Confirma tus datos de contacto (opcional).</p>
             </div>
 
             {/* Resumen */}
-            <div className="bg-gray-900 border border-white/5 rounded-2xl p-4 space-y-3">
+            <div className="bg-white border border-gray-200 rounded-2xl p-4 space-y-3">
               <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Resumen del reporte</p>
               <div className="space-y-2 text-sm">
                 <div className="flex gap-2">
                   <span className="text-gray-500 w-20 flex-shrink-0">Tipo</span>
-                  <span className="text-white font-semibold">{TIPOS.find(t => t.v === tipo)?.label}</span>
+                  <span className="text-orange-400 font-semibold">{TIPOS.find(t => t.v === tipo)?.label}</span>
                 </div>
                 <div className="flex gap-2">
                   <span className="text-gray-500 w-20 flex-shrink-0">Urgencia</span>
-                  <span className="text-white font-semibold">{PRIORIDADES.find(p => p.v === prioridad)?.label}</span>
+                  <span className="text-orange-400 font-semibold">{PRIORIDADES.find(p => p.v === prioridad)?.label}</span>
                 </div>
                 {vendedorNom && (
                   <div className="flex gap-2">
                     <span className="text-gray-500 w-20 flex-shrink-0">Tienda</span>
-                    <span className="text-white font-semibold">{vendedorNom}</span>
+                    <span className="text-orange-400 font-semibold">{vendedorNom}</span>
                   </div>
                 )}
                 <div className="flex gap-2">
                   <span className="text-gray-500 w-20 flex-shrink-0">Título</span>
-                  <span className="text-white">{titulo}</span>
+                  <span className="text-orange-400">{titulo}</span>
                 </div>
                 <div className="flex gap-2">
                   <span className="text-gray-500 w-20 flex-shrink-0">Descripción</span>
-                  <span className="text-gray-300 text-xs leading-relaxed line-clamp-3">{descripcion}</span>
+                  <span className="text-orange-400 text-xs leading-relaxed line-clamp-3">{descripcion}</span>
                 </div>
                 {evidencia && (
                   <div className="flex gap-2">
@@ -414,17 +414,17 @@ function ReportarTiendaContent() {
             </div>
 
             {/* Nota de privacidad */}
-            <div className="flex items-start gap-2.5 bg-blue-950/30 border border-blue-500/15 rounded-2xl px-4 py-3">
-              <AlertCircle className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-blue-300/80 leading-relaxed">
+            <div className="flex items-start gap-2.5 bg-white border border-blue-500/15 rounded-2xl px-4 py-3">
+              <AlertCircle className="w-4 h-4 text-blue-700 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-blue-700/80 leading-relaxed">
                 Tu reporte será revisado por el equipo de Mercado Fénix. Tomamos los reportes en serio y actuaremos según nuestras políticas. Tu información es confidencial.
               </p>
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 bg-red-900/20 border border-red-500/20 rounded-xl px-3 py-2.5">
-                <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
-                <p className="text-xs text-red-300">{error}</p>
+              <div className="flex items-center gap-2 bg-red-100/20 border border-red-500/20 rounded-xl px-3 py-2.5">
+                <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                <p className="text-xs text-red-600">{error}</p>
               </div>
             )}
 
