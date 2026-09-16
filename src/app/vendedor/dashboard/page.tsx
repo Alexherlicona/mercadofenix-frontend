@@ -31,20 +31,23 @@ const PLAN_CFG: Record<string, { label: string; icon: string; color: string; rin
   premium: { label: "Premium",  icon: "👑", color: "text-amber-400",   ring: "ring-amber-500/30",   gradient: "from-amber-600 to-orange-700"  },
 };
 
+// Nota: los colores dentro de StatCard, el header de tienda y los badges de
+// plan son fondos/gradientes de color sólido (naranja, esmeralda, etc.) —
+// se ven bien en ambos temas tal cual, por eso no llevan variante dark:.
 function StatCard({ icon: Icon, label, value, sub, color, onClick }: {
   icon: any; label: string; value: string | number;
   sub?: string; color: string; onClick?: () => void;
 }) {
   return (
     <div onClick={onClick}
-      className={`bg-[#111120] border border-white/[0.07] rounded-2xl p-4 flex flex-col gap-2.5 ${onClick ? "cursor-pointer hover:border-orange-500/30 transition-all" : ""}`}>
+      className={`bg-white border border-gray-200 dark:bg-[#111120] dark:border-white/[0.07] rounded-2xl p-4 flex flex-col gap-2.5 shadow-sm dark:shadow-none ${onClick ? "cursor-pointer hover:border-orange-300 dark:hover:border-orange-500/30 transition-all" : ""}`}>
       <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: color + "18" }}>
         <Icon className="w-4 h-4" style={{ color }} />
       </div>
       <div>
-        <p className="text-xl font-black text-white leading-none">{value}</p>
+        <p className="text-xl font-black text-gray-900 dark:text-white leading-none">{value}</p>
         <p className="text-[11px] text-gray-500 mt-0.5">{label}</p>
-        {sub && <p className="text-[10px] text-orange-400 font-semibold mt-1">{sub}</p>}
+        {sub && <p className="text-[10px] text-orange-500 dark:text-orange-400 font-semibold mt-1">{sub}</p>}
       </div>
     </div>
   );
@@ -80,7 +83,7 @@ export default function VendedorDashboard() {
 
   if (load) return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="flex flex-col items-center gap-3 text-orange-400">
+      <div className="flex flex-col items-center gap-3 text-orange-500 dark:text-orange-400">
         <RefreshCw className="w-7 h-7 animate-spin" />
         <p className="text-sm font-semibold text-gray-500">Cargando tu tienda...</p>
       </div>
@@ -127,11 +130,20 @@ export default function VendedorDashboard() {
     });
   };
 
+  // Colores de sugerencias por tipo — versión clara y oscura
+  const SUGERENCIA_COLORES: Record<string, { bg: string; border: string; text: string }> = {
+    critica:     { bg: "bg-red-50 dark:bg-red-950/40",       border: "border-red-200 dark:border-red-500/25",       text: "text-red-700 dark:text-red-300"       },
+    alerta:      { bg: "bg-amber-50 dark:bg-amber-950/40",   border: "border-amber-200 dark:border-amber-500/25",   text: "text-amber-700 dark:text-amber-300"   },
+    advertencia: { bg: "bg-yellow-50 dark:bg-yellow-950/40", border: "border-yellow-200 dark:border-yellow-500/25", text: "text-yellow-700 dark:text-yellow-300" },
+    info:        { bg: "bg-blue-50 dark:bg-blue-950/30",     border: "border-blue-200 dark:border-blue-500/20",     text: "text-blue-700 dark:text-blue-300"     },
+  };
+
   return (
     /* ── overflow-x-hidden evita scroll horizontal en móvil ── */
     <div className="max-w-3xl mx-auto space-y-5 pb-8 px-4 overflow-x-hidden">
 
       {/* ── HEADER TIENDA ─────────────────────────────────────────────────── */}
+      {/* Gradiente de color sólido — se ve igual de bien en ambos temas */}
       <div className={`bg-gradient-to-br ${planCfg.gradient} rounded-3xl p-5 shadow-xl relative overflow-hidden`}>
         <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full translate-y-1/2 -translate-x-1/2" />
@@ -180,18 +192,18 @@ export default function VendedorDashboard() {
 
       {/* ── LINK ÚNICO DE LA TIENDA ──────────────────────────────────────── */}
       {tiendaUrl && (
-        <div className="bg-[#111120] border border-white/[0.07] rounded-2xl overflow-hidden">
+        <div className="bg-white border border-gray-200 dark:bg-[#111120] dark:border-white/[0.07] rounded-2xl overflow-hidden shadow-sm dark:shadow-none">
 
           {/* Cabecera */}
-          <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-white/[0.05]">
+          <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-gray-100 dark:border-white/[0.05]">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-orange-500/15 flex items-center justify-center">
-                <Link2 className="w-3.5 h-3.5 text-orange-400" />
+              <div className="w-7 h-7 rounded-lg bg-orange-50 dark:bg-orange-500/15 flex items-center justify-center">
+                <Link2 className="w-3.5 h-3.5 text-orange-500 dark:text-orange-400" />
               </div>
-              <p className="text-xs font-bold text-white">Tu link de tienda</p>
+              <p className="text-xs font-bold text-gray-900 dark:text-white">Tu link de tienda</p>
             </div>
             <button onClick={() => setVerQr(q => !q)}
-              className="flex items-center gap-1.5 text-[10px] font-semibold text-gray-500 hover:text-orange-400 transition px-2 py-1 rounded-lg hover:bg-white/5">
+              className="flex items-center gap-1.5 text-[10px] font-semibold text-gray-500 hover:text-orange-500 dark:hover:text-orange-400 transition px-2 py-1 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5">
               <QrCode className="w-3.5 h-3.5" />
               {verQr ? "Ocultar QR" : "Ver QR"}
             </button>
@@ -199,15 +211,15 @@ export default function VendedorDashboard() {
 
           {/* URL + botones — columna en móvil, fila en sm+ */}
           <div className="px-4 py-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-            <p className="w-full text-[11px] text-gray-400 font-mono truncate select-all sm:flex-1" title={tiendaUrl}>
+            <p className="w-full text-[11px] text-gray-500 dark:text-gray-400 font-mono truncate select-all sm:flex-1" title={tiendaUrl}>
               {tiendaUrl}
             </p>
             <div className="flex gap-2 flex-shrink-0">
               <button onClick={copiar}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all
                   ${copiado
-                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                    : "bg-white/[0.06] text-gray-300 hover:bg-orange-500/15 hover:text-orange-300 border border-white/[0.07]"}`}>
+                    ? "bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30"
+                    : "bg-gray-100 text-gray-600 hover:bg-orange-50 hover:text-orange-600 border border-gray-200 dark:bg-white/[0.06] dark:text-gray-300 dark:hover:bg-orange-500/15 dark:hover:text-orange-300 dark:border-white/[0.07]"}`}>
                 {copiado ? <><Check className="w-3.5 h-3.5" /> Copiado</> : <><Copy className="w-3.5 h-3.5" /> Copiar</>}
               </button>
               <a href={`https://wa.me/?text=${encodeURIComponent(`Visita mi tienda en Mercado Fénix: ${tiendaUrl}`)}`}
@@ -220,13 +232,13 @@ export default function VendedorDashboard() {
 
           {/* Panel QR */}
           {verQr && qrSrc && (
-            <div className="border-t border-white/[0.05] px-4 py-5 flex flex-col items-center gap-4">
+            <div className="border-t border-gray-100 dark:border-white/[0.05] px-4 py-5 flex flex-col items-center gap-4">
               <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest">
                 Escanea para visitar tu tienda
               </p>
 
               {/* QR con logo superpuesto en el centro */}
-              <div className="relative inline-block rounded-2xl overflow-hidden shadow-xl shadow-black/40 ring-1 ring-white/10">
+              <div className="relative inline-block rounded-2xl overflow-hidden shadow-xl shadow-black/10 dark:shadow-black/40 ring-1 ring-gray-200 dark:ring-white/10">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={qrSrc} alt="QR de tu tienda" width={220} height={220} className="block" />
 
@@ -241,13 +253,13 @@ export default function VendedorDashboard() {
                 </div>
               </div>
 
-              <p className="text-[10px] text-gray-600 text-center max-w-[220px] leading-relaxed">
+              <p className="text-[10px] text-gray-500 dark:text-gray-600 text-center max-w-[220px] leading-relaxed">
                 Comparte este código en tus redes, catálogos o tarjetas de presentación.
               </p>
               <a href={qrSrc}
                 download={`qr-${v.nombre_tienda?.replace(/\s+/g, "-").toLowerCase()}.png`}
                 target="_blank" rel="noopener noreferrer"
-                className="text-[11px] font-semibold text-orange-400 hover:text-orange-300 transition underline underline-offset-2">
+                className="text-[11px] font-semibold text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 transition underline underline-offset-2">
                 Descargar imagen del QR
               </a>
             </div>
@@ -258,23 +270,23 @@ export default function VendedorDashboard() {
       {/* ── ALERTA MENSAJES ───────────────────────────────────────────────── */}
       {msgs > 0 && (
         <button onClick={() => router.push("/vendedor/dashboard/pedidos")}
-          className="w-full flex items-center gap-3 bg-orange-500/10 border border-orange-500/25 hover:border-orange-500/50 rounded-2xl px-4 py-3.5 transition-all group">
+          className="w-full flex items-center gap-3 bg-orange-50 border border-orange-200 hover:border-orange-400 dark:bg-orange-500/10 dark:border-orange-500/25 dark:hover:border-orange-500/50 rounded-2xl px-4 py-3.5 transition-all group">
           <div className="relative flex-shrink-0">
-            <MessageCircle className="w-5 h-5 text-orange-400" />
+            <MessageCircle className="w-5 h-5 text-orange-500 dark:text-orange-400" />
             <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 rounded-full text-[9px] font-black text-white flex items-center justify-center">
               {msgs > 9 ? "9+" : msgs}
             </span>
           </div>
-          <p className="flex-1 text-left text-sm text-orange-300 font-semibold">
+          <p className="flex-1 text-left text-sm text-orange-700 dark:text-orange-300 font-semibold">
             {msgs} mensaje{msgs > 1 ? "s" : ""} sin leer de tus clientes
           </p>
-          <ChevronRight className="w-4 h-4 text-orange-500/40 group-hover:text-orange-400 transition flex-shrink-0" />
+          <ChevronRight className="w-4 h-4 text-orange-400 group-hover:text-orange-500 dark:text-orange-500/40 dark:group-hover:text-orange-400 transition flex-shrink-0" />
         </button>
       )}
 
       {/* ── MÉTRICAS PRINCIPALES ─────────────────────────────────────────── */}
       <div>
-        <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-3">Resumen</p>
+        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-600 uppercase tracking-widest mb-3">Resumen</p>
         <div className="grid grid-cols-2 gap-3">
           <StatCard icon={Package}     label="Productos activos" value={activosProd}
             sub={totalProd > activosProd ? `${totalProd} total` : undefined}
@@ -295,7 +307,7 @@ export default function VendedorDashboard() {
 
       {/* ── ACCESOS RÁPIDOS ──────────────────────────────────────────────── */}
       <div>
-        <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-3">Accesos rápidos</p>
+        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-600 uppercase tracking-widest mb-3">Accesos rápidos</p>
         <div className="grid grid-cols-2 gap-2.5">
           {[
             { label: "Nuevo producto", icon: Package,     href: "/vendedor/dashboard/productos/nuevo", color: "#f97316" },
@@ -306,12 +318,12 @@ export default function VendedorDashboard() {
             const Icon = item.icon;
             return (
               <button key={item.href} onClick={() => router.push(item.href)}
-                className="flex items-center gap-3 px-4 py-3.5 bg-[#111120] border border-white/[0.07] hover:border-orange-500/25 rounded-2xl transition-all group text-left">
+                className="flex items-center gap-3 px-4 py-3.5 bg-white border border-gray-200 hover:border-orange-300 dark:bg-[#111120] dark:border-white/[0.07] dark:hover:border-orange-500/25 rounded-2xl transition-all group text-left shadow-sm dark:shadow-none">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110"
                   style={{ background: item.color + "18" }}>
                   <Icon className="w-4 h-4" style={{ color: item.color }} />
                 </div>
-                <span className="text-xs font-semibold text-gray-400 group-hover:text-white transition truncate">{item.label}</span>
+                <span className="text-xs font-semibold text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white transition truncate">{item.label}</span>
               </button>
             );
           })}
@@ -321,16 +333,10 @@ export default function VendedorDashboard() {
       {/* ── SUGERENCIAS INTELIGENTES ─────────────────────────────────────── */}
       {sugerencias.length > 0 && (
         <div>
-          <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-3">Sugerencias para tu tienda</p>
+          <p className="text-[10px] font-bold text-gray-400 dark:text-gray-600 uppercase tracking-widest mb-3">Sugerencias para tu tienda</p>
           <div className="space-y-2">
             {sugerencias.slice(0, 3).map((s: any, i: number) => {
-              const colorMap: Record<string, { bg: string; border: string; text: string }> = {
-                critica:     { bg: "bg-red-950/40",    border: "border-red-500/25",    text: "text-red-300"    },
-                alerta:      { bg: "bg-amber-950/40",  border: "border-amber-500/25",  text: "text-amber-300"  },
-                advertencia: { bg: "bg-yellow-950/40", border: "border-yellow-500/25", text: "text-yellow-300" },
-                info:        { bg: "bg-blue-950/30",   border: "border-blue-500/20",   text: "text-blue-300"   },
-              };
-              const cfg = colorMap[s.tipo] || colorMap.info;
+              const cfg = SUGERENCIA_COLORES[s.tipo] || SUGERENCIA_COLORES.info;
               return (
                 <button key={i} onClick={() => s.url && router.push(s.url)}
                   className={`w-full flex items-start gap-3 px-4 py-3.5 ${cfg.bg} border ${cfg.border} rounded-2xl text-left transition-all hover:opacity-90 group`}>
@@ -339,7 +345,7 @@ export default function VendedorDashboard() {
                     <p className={`text-xs font-bold ${cfg.text}`}>{s.titulo}</p>
                     <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{s.desc}</p>
                   </div>
-                  {s.url && <ChevronRight className="w-3.5 h-3.5 text-gray-600 group-hover:text-gray-400 flex-shrink-0 mt-0.5 transition" />}
+                  {s.url && <ChevronRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-600 dark:text-gray-600 dark:group-hover:text-gray-400 flex-shrink-0 mt-0.5 transition" />}
                 </button>
               );
             })}
@@ -351,28 +357,28 @@ export default function VendedorDashboard() {
       {stats?.productos?.top_vendidos?.filter((p: any) => p.ventas > 0).length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Más vendidos</p>
+            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-600 uppercase tracking-widest">Más vendidos</p>
             <button onClick={() => router.push("/vendedor/dashboard/estadisticas")}
-              className="text-[10px] text-orange-400 font-semibold hover:text-orange-300 transition">
+              className="text-[10px] text-orange-500 dark:text-orange-400 font-semibold hover:text-orange-600 dark:hover:text-orange-300 transition">
               Ver todo →
             </button>
           </div>
           <div className="space-y-2">
             {stats.productos.top_vendidos.filter((p: any) => p.ventas > 0).slice(0, 3).map((p: any) => (
-              <div key={p.id} className="flex items-center gap-3 px-4 py-3 bg-[#111120] border border-white/[0.07] rounded-2xl">
+              <div key={p.id} className="flex items-center gap-3 px-4 py-3 bg-white border border-gray-200 dark:bg-[#111120] dark:border-white/[0.07] rounded-2xl shadow-sm dark:shadow-none">
                 {p.foto
                   ? <img
                       src={p.foto.startsWith("http") ? p.foto : `${API_URL}${p.foto}`}
                       alt={p.nombre}
-                      className="w-9 h-9 rounded-xl object-cover flex-shrink-0 border border-white/10" />
-                  : <div className="w-9 h-9 rounded-xl bg-gray-800 flex items-center justify-center flex-shrink-0">
-                      <Package className="w-4 h-4 text-gray-600" />
+                      className="w-9 h-9 rounded-xl object-cover flex-shrink-0 border border-gray-200 dark:border-white/10" />
+                  : <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0">
+                      <Package className="w-4 h-4 text-gray-400 dark:text-gray-600" />
                     </div>}
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-white truncate">{p.nombre}</p>
+                  <p className="text-xs font-semibold text-gray-900 dark:text-white truncate">{p.nombre}</p>
                   <p className="text-[10px] text-gray-500">{p.ventas} venta{p.ventas !== 1 ? "s" : ""} · L{p.precio.toFixed(2)}</p>
                 </div>
-                <span className="text-xs font-black text-orange-400 flex-shrink-0">
+                <span className="text-xs font-black text-orange-500 dark:text-orange-400 flex-shrink-0">
                   #{stats.productos.top_vendidos.findIndex((x: any) => x.id === p.id) + 1}
                 </span>
               </div>
@@ -383,16 +389,16 @@ export default function VendedorDashboard() {
 
       {/* ── ESTADO GENERAL si no hay productos ───────────────────────────── */}
       {totalProd === 0 && (
-        <div className="text-center py-8 bg-[#111120] border border-white/[0.07] rounded-3xl space-y-4">
-          <div className="w-14 h-14 bg-orange-500/10 rounded-2xl flex items-center justify-center mx-auto">
-            <Store className="w-7 h-7 text-orange-400" />
+        <div className="text-center py-8 bg-white border border-gray-200 dark:bg-[#111120] dark:border-white/[0.07] rounded-3xl space-y-4 shadow-sm dark:shadow-none">
+          <div className="w-14 h-14 bg-orange-50 dark:bg-orange-500/10 rounded-2xl flex items-center justify-center mx-auto">
+            <Store className="w-7 h-7 text-orange-500 dark:text-orange-400" />
           </div>
           <div>
-            <p className="font-bold text-white text-base">¡Tu tienda está lista!</p>
+            <p className="font-bold text-gray-900 dark:text-white text-base">¡Tu tienda está lista!</p>
             <p className="text-gray-500 text-sm mt-1 px-4">Empieza publicando tu primer producto para aparecer en el catálogo.</p>
           </div>
           <button onClick={() => router.push("/vendedor/dashboard/productos/nuevo")}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-bold rounded-2xl text-sm transition-all active:scale-[0.98] shadow-lg shadow-orange-900/30">
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-bold rounded-2xl text-sm transition-all active:scale-[0.98] shadow-lg shadow-orange-900/20 dark:shadow-orange-900/30">
             Publicar primer producto
             <ArrowRight className="w-4 h-4" />
           </button>
