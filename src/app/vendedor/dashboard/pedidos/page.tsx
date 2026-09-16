@@ -84,13 +84,15 @@ interface DetallePedido {
 }
 
 // ─── CONSTANTES ───────────────────────────────────────────────────────────────
+// Colores con variante clara (por defecto) y oscura (dark:), igual que en
+// las páginas principales del dashboard.
 const ESTADO_CONFIG: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-  pendiente:      { label: "Pendiente",      color: "text-amber-700",   bg: "bg-amber-100",   dot: "bg-amber-500"   },
-  confirmado:     { label: "Confirmado",     color: "text-blue-700",    bg: "bg-blue-100",    dot: "bg-blue-500"    },
-  en_preparacion: { label: "En preparación", color: "text-purple-700",  bg: "bg-purple-100",  dot: "bg-purple-500"  },
-  en_camino:      { label: "En camino",      color: "text-cyan-700",    bg: "bg-cyan-100",    dot: "bg-cyan-500"    },
-  entregado:      { label: "Entregado",      color: "text-emerald-700", bg: "bg-emerald-100", dot: "bg-emerald-500" },
-  cancelado:      { label: "Cancelado",      color: "text-red-700",     bg: "bg-red-100",     dot: "bg-red-500"     },
+  pendiente:      { label: "Pendiente",      color: "text-amber-700 dark:text-amber-300",   bg: "bg-amber-100 dark:bg-amber-500/15",   dot: "bg-amber-500"   },
+  confirmado:     { label: "Confirmado",     color: "text-blue-700 dark:text-blue-300",     bg: "bg-blue-100 dark:bg-blue-500/15",     dot: "bg-blue-500"    },
+  en_preparacion: { label: "En preparación", color: "text-purple-700 dark:text-purple-300", bg: "bg-purple-100 dark:bg-purple-500/15", dot: "bg-purple-500"  },
+  en_camino:      { label: "En camino",      color: "text-cyan-700 dark:text-cyan-300",     bg: "bg-cyan-100 dark:bg-cyan-500/15",     dot: "bg-cyan-500"    },
+  entregado:      { label: "Entregado",      color: "text-emerald-700 dark:text-emerald-300", bg: "bg-emerald-100 dark:bg-emerald-500/15", dot: "bg-emerald-500" },
+  cancelado:      { label: "Cancelado",      color: "text-red-700 dark:text-red-300",       bg: "bg-red-100 dark:bg-red-500/15",       dot: "bg-red-500"     },
 };
 
 // Para pedidos físicos
@@ -130,22 +132,22 @@ function PanelInfoPedido({ detalle, cargando }: { detalle: DetallePedido | null;
   const dir = detalle.direccion_guardada;
 
   return (
-    <div className="border-b border-gray-800">
+    <div className="border-b border-gray-200 dark:border-gray-800">
       <button
         onClick={() => setExpandido(!expandido)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-800/50 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <Info className="w-4 h-4 text-orange-400" />
-          <span className="text-sm font-bold text-white">Información del pedido</span>
+          <Info className="w-4 h-4 text-orange-500 dark:text-orange-400" />
+          <span className="text-sm font-bold text-gray-900 dark:text-white">Información del pedido</span>
           <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.color}`}>{cfg.label}</span>
           {detalle.es_digital && (
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 flex items-center gap-1">
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300 flex items-center gap-1">
               <Download className="w-2.5 h-2.5" /> Digital
             </span>
           )}
         </div>
-        {expandido ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+        {expandido ? <ChevronUp className="w-4 h-4 text-gray-500 dark:text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />}
       </button>
 
       {expandido && (
@@ -153,15 +155,15 @@ function PanelInfoPedido({ detalle, cargando }: { detalle: DetallePedido | null;
 
           {/* Cliente */}
           {detalle.cliente && (
-            <div className="bg-gray-800/60 rounded-2xl p-3">
-              <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-2">Cliente</p>
+            <div className="bg-gray-50 dark:bg-gray-800/60 rounded-2xl p-3">
+              <p className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Cliente</p>
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center font-black text-white flex-shrink-0">
                   {detalle.cliente.nombres.charAt(0)}
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-white">{detalle.cliente.nombres} {detalle.cliente.apellidos}</p>
-                  <p className="text-xs text-gray-400 flex items-center gap-1"><Phone className="w-3 h-3" />{detalle.cliente.telefono}</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">{detalle.cliente.nombres} {detalle.cliente.apellidos}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1"><Phone className="w-3 h-3" />{detalle.cliente.telefono}</p>
                   {detalle.cliente.email && <p className="text-xs text-gray-500">{detalle.cliente.email}</p>}
                 </div>
               </div>
@@ -170,61 +172,63 @@ function PanelInfoPedido({ detalle, cargando }: { detalle: DetallePedido | null;
 
           {/* Entrega y pago */}
           <div className="grid grid-cols-2 gap-2">
-            <div className="bg-gray-800/60 rounded-xl p-3">
-              <p className="text-xs text-gray-400 mb-1">Entrega</p>
+            <div className="bg-gray-50 dark:bg-gray-800/60 rounded-xl p-3">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Entrega</p>
               <div className="flex items-center gap-1.5">
                 {detalle.es_digital
-                  ? <Download className="w-3.5 h-3.5 text-violet-400" />
+                  ? <Download className="w-3.5 h-3.5 text-violet-500 dark:text-violet-400" />
                   : detalle.tipo_entrega === "domicilio"
-                  ? <Truck className="w-3.5 h-3.5 text-cyan-400" />
-                  : <Store className="w-3.5 h-3.5 text-blue-400" />}
-                <p className="text-xs font-bold text-white">
+                  ? <Truck className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" />
+                  : <Store className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />}
+                <p className="text-xs font-bold text-gray-900 dark:text-white">
                   {detalle.es_digital ? "Descarga digital" : detalle.tipo_entrega === "domicilio" ? "A domicilio" : "En tienda"}
                 </p>
               </div>
             </div>
-            <div className="bg-gray-800/60 rounded-xl p-3">
-              <p className="text-xs text-gray-400 mb-1">Pago</p>
+            <div className="bg-gray-50 dark:bg-gray-800/60 rounded-xl p-3">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Pago</p>
               <div className="flex items-center gap-1.5">
                 {detalle.metodo_pago === "efectivo"
-                  ? <Banknote className="w-3.5 h-3.5 text-green-400" />
+                  ? <Banknote className="w-3.5 h-3.5 text-green-500 dark:text-green-400" />
                   : detalle.metodo_pago === "tigo_money"
-                  ? <Zap className="w-3.5 h-3.5 text-yellow-400" />
-                  : <CreditCard className="w-3.5 h-3.5 text-blue-400" />}
-                <p className="text-xs font-bold text-white capitalize">{detalle.metodo_pago.replace("_", " ")}</p>
+                  ? <Zap className="w-3.5 h-3.5 text-yellow-500 dark:text-yellow-400" />
+                  : <CreditCard className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />}
+                <p className="text-xs font-bold text-gray-900 dark:text-white capitalize">{detalle.metodo_pago.replace("_", " ")}</p>
               </div>
             </div>
           </div>
 
           {/* Dirección (solo físico) */}
           {!detalle.es_digital && detalle.tipo_entrega === "domicilio" && (
-            <div className="bg-gray-800/60 rounded-xl p-3">
-              <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+            <div className="bg-gray-50 dark:bg-gray-800/60 rounded-xl p-3">
+              <p className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
                 <MapPin className="w-3 h-3" /> Dirección de entrega
               </p>
               {dir ? (
                 <div className="space-y-0.5">
-                  <p className="text-xs font-bold text-orange-400">{dir.nombre}</p>
-                  <p className="text-xs text-white">{dir.departamento}, {dir.municipio}</p>
-                  <p className="text-xs text-gray-300">{dir.direccion_exacta}</p>
-                  {dir.referencia && <p className="text-xs text-gray-400 italic">Ref: {dir.referencia}</p>}
-                  {dir.telefono && <p className="text-xs text-gray-400 flex items-center gap-1 mt-1"><Phone className="w-3 h-3" /> {dir.telefono}</p>}
+                  <p className="text-xs font-bold text-orange-600 dark:text-orange-400">{dir.nombre}</p>
+                  <p className="text-xs text-gray-900 dark:text-white">{dir.departamento}, {dir.municipio}</p>
+                  <p className="text-xs text-gray-700 dark:text-gray-300">{dir.direccion_exacta}</p>
+                  {dir.referencia && <p className="text-xs text-gray-500 dark:text-gray-400 italic">Ref: {dir.referencia}</p>}
+                  {dir.telefono && <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-1"><Phone className="w-3 h-3" /> {dir.telefono}</p>}
                 </div>
               ) : (
-                <p className="text-xs text-gray-300">{detalle.direccion_alternativa || "No especificada"}</p>
+                <p className="text-xs text-gray-700 dark:text-gray-300">{detalle.direccion_alternativa || "No especificada"}</p>
               )}
             </div>
           )}
 
           {/* Estado descarga (digital) */}
           {detalle.es_digital && (
-            <div className={`rounded-xl p-3 border ${detalle.descarga_habilitada ? "bg-emerald-900/20 border-emerald-500/30" : "bg-amber-900/20 border-amber-500/30"}`}>
+            <div className={`rounded-xl p-3 border ${detalle.descarga_habilitada
+              ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-500/30"
+              : "bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-500/30"}`}>
               <p className="text-xs font-black uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                 {detalle.descarga_habilitada
-                  ? <><Unlock className="w-3 h-3 text-emerald-400" /><span className="text-emerald-400">Descarga habilitada</span></>
-                  : <><Lock className="w-3 h-3 text-amber-400" /><span className="text-amber-400">Descarga pendiente</span></>}
+                  ? <><Unlock className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /><span className="text-emerald-600 dark:text-emerald-400">Descarga habilitada</span></>
+                  : <><Lock className="w-3 h-3 text-amber-600 dark:text-amber-400" /><span className="text-amber-600 dark:text-amber-400">Descarga pendiente</span></>}
               </p>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 {detalle.descarga_habilitada
                   ? "El cliente ya puede descargar el archivo."
                   : "Verifica el comprobante de pago y luego autoriza la descarga."}
@@ -233,33 +237,33 @@ function PanelInfoPedido({ detalle, cargando }: { detalle: DetallePedido | null;
           )}
 
           {/* Productos */}
-          <div className="bg-gray-800/60 rounded-xl p-3">
-            <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+          <div className="bg-gray-50 dark:bg-gray-800/60 rounded-xl p-3">
+            <p className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
               <Package className="w-3 h-3" /> Productos ({detalle.items.length})
             </p>
             <div className="space-y-2">
               {detalle.items.map(item => (
                 <div key={item.id} className="flex justify-between items-start gap-2">
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-white line-clamp-1">{item.nombre_producto}</p>
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white line-clamp-1">{item.nombre_producto}</p>
                     <p className="text-xs text-gray-500">
                       x{item.cantidad}{item.color && <span> · {item.color}</span>}{item.talla && <span> · T.{item.talla}</span>}
                     </p>
                   </div>
-                  <p className="text-xs font-black text-orange-400 flex-shrink-0">L{item.subtotal.toFixed(2)}</p>
+                  <p className="text-xs font-black text-orange-600 dark:text-orange-400 flex-shrink-0">L{item.subtotal.toFixed(2)}</p>
                 </div>
               ))}
             </div>
-            <div className="border-t border-gray-700 mt-2 pt-2 flex justify-between">
-              <span className="text-xs text-gray-400">Total</span>
-              <span className="text-sm font-black text-orange-400">L{detalle.total.toFixed(2)}</span>
+            <div className="border-t border-gray-200 dark:border-gray-700 mt-2 pt-2 flex justify-between">
+              <span className="text-xs text-gray-500 dark:text-gray-400">Total</span>
+              <span className="text-sm font-black text-orange-600 dark:text-orange-400">L{detalle.total.toFixed(2)}</span>
             </div>
           </div>
 
           {detalle.nota_cliente && (
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3">
-              <p className="text-xs font-bold text-amber-400 mb-1">Nota del cliente</p>
-              <p className="text-xs text-amber-200">{detalle.nota_cliente}</p>
+            <div className="bg-amber-50 border border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/30 rounded-xl p-3">
+              <p className="text-xs font-bold text-amber-700 dark:text-amber-400 mb-1">Nota del cliente</p>
+              <p className="text-xs text-amber-800 dark:text-amber-200">{detalle.nota_cliente}</p>
             </div>
           )}
 
@@ -500,9 +504,9 @@ function ChatVendedor({ sala, onClose, onMensajeLeido }: {
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center bg-black/70 backdrop-blur-sm">
-      <div className="w-full sm:max-w-lg h-[95vh] sm:h-[700px] flex flex-col bg-gray-900 sm:rounded-3xl overflow-hidden shadow-2xl border border-white/10">
+      <div className="w-full sm:max-w-lg h-[95vh] sm:h-[700px] flex flex-col bg-white dark:bg-gray-900 sm:rounded-3xl overflow-hidden shadow-2xl border border-gray-200 dark:border-white/10">
 
-        {/* HEADER */}
+        {/* HEADER — gradiente de color sólido, se ve igual en ambos temas */}
         <div className={`p-4 flex-shrink-0 ${esDigital ? "bg-gradient-to-r from-violet-700 to-purple-800" : "bg-gradient-to-r from-orange-600 to-red-700"}`}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-black text-white text-lg flex-shrink-0">
@@ -547,9 +551,9 @@ function ChatVendedor({ sala, onClose, onMensajeLeido }: {
 
             {/* Descarga ya habilitada */}
             {esDigital && descargaHabilitada && (
-              <div className="w-full bg-emerald-900/40 border border-emerald-500/40 rounded-xl py-2.5 px-4 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                <p className="text-sm text-emerald-300 font-semibold">Descarga habilitada — enlace enviado al cliente</p>
+              <div className="w-full bg-emerald-50 border border-emerald-200 dark:bg-emerald-900/40 dark:border-emerald-500/40 rounded-xl py-2.5 px-4 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                <p className="text-sm text-emerald-700 dark:text-emerald-300 font-semibold">Descarga habilitada — enlace enviado al cliente</p>
               </div>
             )}
 
@@ -570,21 +574,21 @@ function ChatVendedor({ sala, onClose, onMensajeLeido }: {
         </div>
 
         {/* INFO DEL PEDIDO */}
-        <div className="flex-shrink-0 overflow-y-auto max-h-[40%] bg-gray-900">
+        <div className="flex-shrink-0 overflow-y-auto max-h-[40%] bg-white dark:bg-gray-900">
           <PanelInfoPedido detalle={detallePedido} cargando={cargandoDetalle} />
         </div>
 
         {/* MENSAJES */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-gray-950 min-h-0">
+        <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-gray-50 dark:bg-gray-950 min-h-0">
           {cargando ? (
             <div className="flex items-center justify-center h-full">
               <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
             </div>
           ) : mensajes.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
-              <MessageCircle className="w-10 h-10 text-gray-700 mb-2" />
+              <MessageCircle className="w-10 h-10 text-gray-300 dark:text-gray-700 mb-2" />
               <p className="text-gray-500 font-semibold text-sm">Sin mensajes aún</p>
-              <p className="text-gray-600 text-xs mt-1">Saluda a tu cliente para empezar</p>
+              <p className="text-gray-400 dark:text-gray-600 text-xs mt-1">Saluda a tu cliente para empezar</p>
             </div>
           ) : (
             mensajes.map(msg => {
@@ -597,16 +601,16 @@ function ChatVendedor({ sala, onClose, onMensajeLeido }: {
                       ? esDigital
                         ? "bg-gradient-to-br from-violet-600 to-purple-700 text-white rounded-tr-sm"
                         : "bg-gradient-to-br from-orange-600 to-red-600 text-white rounded-tr-sm"
-                      : "bg-gray-800 text-gray-100 rounded-tl-sm border border-gray-700"
+                      : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-tl-sm border border-gray-200 dark:border-gray-700"
                   }`}>
                     {msg.es_comprobante && msg.archivo_url && (
                       <div className="mb-2">
-                        <p className="text-xs font-bold text-orange-300 mb-1 flex items-center gap-1">
+                        <p className="text-xs font-bold text-orange-600 dark:text-orange-300 mb-1 flex items-center gap-1">
                           <Receipt className="w-3 h-3" /> Comprobante
                         </p>
                         <a href={`${API_URL}${msg.archivo_url}`} target="_blank" rel="noopener noreferrer">
                           <img src={`${API_URL}${msg.archivo_url}`} alt="Comprobante"
-                            className="w-full rounded-lg max-h-36 object-cover hover:opacity-90 transition border border-white/20" />
+                            className="w-full rounded-lg max-h-36 object-cover hover:opacity-90 transition border border-gray-200 dark:border-white/20" />
                         </a>
                       </div>
                     )}
@@ -632,7 +636,7 @@ function ChatVendedor({ sala, onClose, onMensajeLeido }: {
                     ) : (
                       <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.contenido}</p>
                     )}
-                    <p className={`text-xs mt-0.5 text-right ${esMio ? "text-white/50" : "text-gray-500"}`}>
+                    <p className={`text-xs mt-0.5 text-right ${esMio ? "text-white/50" : "text-gray-500 dark:text-gray-500"}`}>
                       {formatHora(msg.enviado_en)}
                     </p>
                   </div>
@@ -642,7 +646,7 @@ function ChatVendedor({ sala, onClose, onMensajeLeido }: {
           )}
           {typing && (
             <div className="flex justify-start">
-              <div className="bg-gray-800 border border-gray-700 rounded-2xl rounded-tl-sm px-4 py-2.5 flex gap-1">
+              <div className="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-sm px-4 py-2.5 flex gap-1">
                 {[0, 150, 300].map(d => (
                   <div key={d} className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />
                 ))}
@@ -653,10 +657,10 @@ function ChatVendedor({ sala, onClose, onMensajeLeido }: {
         </div>
 
         {/* INPUT */}
-        <div className="p-3 bg-gray-900 border-t border-gray-800 flex-shrink-0">
+        <div className="p-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 flex-shrink-0">
           <div className="flex items-center gap-2 mb-2">
             <button onClick={() => fileRef.current?.click()} disabled={subiendoArchivo}
-              className="flex items-center gap-1.5 text-xs text-orange-400 font-semibold bg-orange-500/10 hover:bg-orange-500/20 px-3 py-1.5 rounded-full transition-colors disabled:opacity-50">
+              className="flex items-center gap-1.5 text-xs text-orange-600 dark:text-orange-400 font-semibold bg-orange-50 dark:bg-orange-500/10 hover:bg-orange-100 dark:hover:bg-orange-500/20 px-3 py-1.5 rounded-full transition-colors disabled:opacity-50">
               {subiendoArchivo ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
               {subiendoArchivo ? "Subiendo..." : "Adjuntar"}
             </button>
@@ -668,7 +672,7 @@ function ChatVendedor({ sala, onClose, onMensajeLeido }: {
               onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviar(); } }}
               placeholder="Escribe un mensaje..."
               rows={1}
-              className="flex-1 resize-none bg-gray-800 border border-gray-700 focus:border-orange-500 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-gray-500 outline-none transition-colors max-h-20"
+              className="flex-1 resize-none bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:border-orange-500 rounded-2xl px-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none transition-colors max-h-20"
             />
             <button onClick={enviar} disabled={!texto.trim() || enviando}
               className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center flex-shrink-0 self-end disabled:opacity-40 hover:shadow-lg transition-all active:scale-95">
@@ -764,7 +768,7 @@ export default function VendedorPedidosPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#0a0a12]">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a12] transition-colors">
       {salaActiva && (
         <ChatVendedor
           sala={salaActiva}
@@ -774,13 +778,13 @@ export default function VendedorPedidosPage() {
       )}
 
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-[#0a0a12]/95 backdrop-blur-sm border-b border-white/[0.06] px-4 py-3.5 flex items-center gap-3">
+      <div className="sticky top-0 z-20 bg-white/95 dark:bg-[#0a0a12]/95 backdrop-blur-sm border-b border-gray-200 dark:border-white/[0.06] px-4 py-3.5 flex items-center gap-3">
         <button onClick={() => router.push("/vendedor/dashboard")}
-          className="p-2 rounded-xl hover:bg-white/[0.05] transition text-gray-400">
+          className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/[0.05] transition text-gray-500 dark:text-gray-400">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex-1">
-          <h1 className="text-base font-black text-white">Pedidos y Mensajes</h1>
+          <h1 className="text-base font-black text-gray-900 dark:text-white">Pedidos y Mensajes</h1>
           <p className="text-xs text-gray-500">
             {clientesAgrupados.length} cliente{clientesAgrupados.length !== 1 ? "s" : ""}
             {totalNoLeidos > 0 && (
@@ -790,24 +794,28 @@ export default function VendedorPedidosPage() {
             )}
           </p>
         </div>
-        <button onClick={cargarSalas} className="p-2 rounded-xl hover:bg-white/[0.05] transition text-gray-500">
+        <button onClick={cargarSalas} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/[0.05] transition text-gray-500">
           <RefreshCw className={`w-4 h-4 ${cargando ? "animate-spin" : ""}`} />
         </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-white/[0.06] px-4">
+      <div className="flex border-b border-gray-200 dark:border-white/[0.06] px-4">
         {[
           { id: "activos",  label: "Activos",   count: salasActivas.length  },
           { id: "cerrados", label: "Historial",  count: salasCerradas.length },
         ].map(tab => (
           <button key={tab.id} onClick={() => { setTabEstado(tab.id); setClienteAbierto(null); }}
             className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-all -mb-px
-              ${tabEstado === tab.id ? "border-orange-500 text-orange-400" : "border-transparent text-gray-600 hover:text-gray-300"}`}>
+              ${tabEstado === tab.id
+                ? "border-orange-500 text-orange-600 dark:text-orange-400"
+                : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-600 dark:hover:text-gray-300"}`}>
             {tab.label}
             {tab.count > 0 && (
               <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full
-                ${tabEstado === tab.id ? "bg-orange-500/20 text-orange-400" : "bg-white/[0.05] text-gray-500"}`}>
+                ${tabEstado === tab.id
+                  ? "bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400"
+                  : "bg-gray-100 dark:bg-white/[0.05] text-gray-500 dark:text-gray-500"}`}>
                 {tab.count}
               </span>
             )}
@@ -823,10 +831,10 @@ export default function VendedorPedidosPage() {
           </div>
         ) : clientesAgrupados.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-orange-500/10 flex items-center justify-center mb-4">
-              <ShoppingBag className="w-8 h-8 text-orange-400" />
+            <div className="w-16 h-16 rounded-2xl bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center mb-4">
+              <ShoppingBag className="w-8 h-8 text-orange-500 dark:text-orange-400" />
             </div>
-            <h2 className="text-lg font-black text-white mb-1">
+            <h2 className="text-lg font-black text-gray-900 dark:text-white mb-1">
               {tabEstado === "activos" ? "Sin pedidos activos" : "Sin historial"}
             </h2>
             <p className="text-gray-500 text-sm max-w-xs">
@@ -842,7 +850,9 @@ export default function VendedorPedidosPage() {
             return (
               <div key={cliente.cliente_id}
                 className={`rounded-2xl border overflow-hidden transition-all
-                  ${tieneMsgs ? "border-orange-500/40 bg-orange-500/[0.04]" : "border-white/[0.07] bg-[#0f0f1a]"}`}>
+                  ${tieneMsgs
+                    ? "border-orange-300 bg-orange-50 dark:border-orange-500/40 dark:bg-orange-500/[0.04]"
+                    : "border-gray-200 bg-white dark:border-white/[0.07] dark:bg-[#0f0f1a]"}`}>
 
                 {/* Cabecera del cliente — siempre visible */}
                 <button onClick={() => setClienteAbierto(estaAbierto ? null : cliente.cliente_id)}
@@ -860,42 +870,42 @@ export default function VendedorPedidosPage() {
                   </div>
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className={`font-bold text-sm ${tieneMsgs ? "text-white" : "text-gray-200"}`}>
+                    <p className={`font-bold text-sm ${tieneMsgs ? "text-gray-900 dark:text-white" : "text-gray-700 dark:text-gray-200"}`}>
                       {cliente.cliente_nombre}
                     </p>
                     <p className="text-xs text-gray-500">
                       {cliente.salas.length} pedido{cliente.salas.length !== 1 ? "s" : ""}
-                      {tieneMsgs && <span className="text-orange-400 font-semibold"> · {cliente.total_no_leidos} sin leer</span>}
+                      {tieneMsgs && <span className="text-orange-600 dark:text-orange-400 font-semibold"> · {cliente.total_no_leidos} sin leer</span>}
                     </p>
                   </div>
-                  <ChevronDown className={`w-4 h-4 text-gray-600 flex-shrink-0 transition-transform ${estaAbierto ? "rotate-180" : ""}`} />
+                  <ChevronDown className={`w-4 h-4 text-gray-400 dark:text-gray-600 flex-shrink-0 transition-transform ${estaAbierto ? "rotate-180" : ""}`} />
                 </button>
 
                 {/* Pedidos del cliente — expandibles */}
                 {estaAbierto && (
-                  <div className="border-t border-white/[0.05] divide-y divide-white/[0.03]">
+                  <div className="border-t border-gray-100 dark:border-white/[0.05] divide-y divide-gray-100 dark:divide-white/[0.03]">
                     {cliente.salas.map(sala => {
                       const cfg = ESTADO_CONFIG[sala.pedido_estado] || ESTADO_CONFIG.pendiente;
                       const msgsNuevos = sala.no_leidos > 0;
                       return (
                         <div key={sala.sala_id}>
                           <button onClick={() => setSalaActiva(sala)}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/[0.03] transition-all">
+                            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-white/[0.03] transition-all">
                             {/* Ícono tipo */}
                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-sm
-                              ${sala.es_digital ? "bg-violet-500/15" : "bg-orange-500/15"}`}>
+                              ${sala.es_digital ? "bg-violet-100 dark:bg-violet-500/15" : "bg-orange-100 dark:bg-orange-500/15"}`}>
                               {sala.es_digital ? "💾" : "📦"}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-xs font-bold text-gray-300">#{sala.pedido_id}</span>
+                                <span className="text-xs font-bold text-gray-700 dark:text-gray-300">#{sala.pedido_id}</span>
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.color}`}>
                                   {cfg.label}
                                 </span>
-                                <span className="text-xs text-orange-400 font-semibold">L{sala.pedido_total.toFixed(2)}</span>
+                                <span className="text-xs text-orange-600 dark:text-orange-400 font-semibold">L{sala.pedido_total.toFixed(2)}</span>
                               </div>
                               {sala.ultimo_mensaje && (
-                                <p className={`text-xs mt-0.5 truncate ${msgsNuevos ? "text-gray-300 font-semibold" : "text-gray-600"}`}>
+                                <p className={`text-xs mt-0.5 truncate ${msgsNuevos ? "text-gray-700 dark:text-gray-300 font-semibold" : "text-gray-400 dark:text-gray-600"}`}>
                                   {sala.ultimo_mensaje}
                                 </p>
                               )}
@@ -905,14 +915,14 @@ export default function VendedorPedidosPage() {
                                 {sala.no_leidos}
                               </span>
                             )}
-                            <MessageCircle className={`w-4 h-4 flex-shrink-0 ${msgsNuevos ? "text-orange-400" : "text-gray-700"}`} />
+                            <MessageCircle className={`w-4 h-4 flex-shrink-0 ${msgsNuevos ? "text-orange-500 dark:text-orange-400" : "text-gray-300 dark:text-gray-700"}`} />
                           </button>
 
                           {/* Botón archivar — solo para entregados/cancelados */}
                           {(sala.pedido_estado === "entregado" || sala.pedido_estado === "cancelado") && (
                             <button
                               onClick={e => { e.stopPropagation(); setConfirmBorrarId(sala.pedido_id); }}
-                              className="w-full flex items-center justify-center gap-1.5 py-2 text-[11px] text-gray-700 hover:text-red-400 hover:bg-red-500/5 transition-colors">
+                              className="w-full flex items-center justify-center gap-1.5 py-2 text-[11px] text-gray-400 hover:text-red-500 hover:bg-red-50 dark:text-gray-700 dark:hover:text-red-400 dark:hover:bg-red-500/5 transition-colors">
                               <Trash2 className="w-3 h-3" /> Archivar del historial
                             </button>
                           )}
@@ -931,18 +941,18 @@ export default function VendedorPedidosPage() {
       {confirmBorrarId !== null && (
         <div className="fixed inset-0 bg-black/70 z-[90] flex items-end justify-center sm:items-center"
           onClick={() => setConfirmBorrarId(null)}>
-          <div className="bg-[#111120] border border-white/[0.08] w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl p-6 pb-8 shadow-2xl"
+          <div className="bg-white dark:bg-[#111120] border border-gray-200 dark:border-white/[0.08] w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl p-6 pb-8 shadow-2xl"
             onClick={e => e.stopPropagation()}>
-            <div className="w-11 h-11 rounded-2xl bg-red-500/15 flex items-center justify-center mx-auto mb-4">
-              <Trash2 className="w-5 h-5 text-red-400" />
+            <div className="w-11 h-11 rounded-2xl bg-red-50 dark:bg-red-500/15 flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-5 h-5 text-red-500 dark:text-red-400" />
             </div>
-            <h3 className="font-black text-base text-white text-center mb-1.5">¿Archivar pedido?</h3>
+            <h3 className="font-black text-base text-gray-900 dark:text-white text-center mb-1.5">¿Archivar pedido?</h3>
             <p className="text-sm text-gray-500 text-center mb-5 leading-relaxed">
               Se ocultará de tu historial. El pedido sigue en el sistema para registros internos.
             </p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmBorrarId(null)}
-                className="flex-1 py-3 rounded-2xl bg-[#1a1a2e] font-semibold text-gray-400 hover:bg-[#222236] transition-colors text-sm">
+                className="flex-1 py-3 rounded-2xl bg-gray-100 dark:bg-[#1a1a2e] font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#222236] transition-colors text-sm">
                 Cancelar
               </button>
               <button onClick={() => archivarPedido(confirmBorrarId)}
