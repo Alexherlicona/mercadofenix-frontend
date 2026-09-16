@@ -12,8 +12,10 @@ import {
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 function hdr() { return { Authorization: `Bearer ${localStorage.getItem("vendedor_token") || ""}` }; }
 
-const inp = "w-full px-4 py-3 bg-[#0f0f1e] border border-[#1e1e30] focus:border-orange-500/50 focus:bg-[#141428] rounded-2xl text-white text-sm placeholder-gray-600 outline-none transition";
-const inpRO = "w-full px-4 py-3 bg-[#0a0a14] border border-[#141420] rounded-2xl text-gray-500 text-sm cursor-not-allowed select-none";
+// ── Inputs: sigue la convención de colores del dashboard (ver ThemeContext.tsx) ──
+const inp = "w-full px-4 py-3 bg-gray-50 dark:bg-[#0f0f1e] border border-gray-200 dark:border-[#1e1e30] focus:border-orange-500/50 focus:bg-white dark:focus:bg-[#141428] rounded-2xl text-gray-900 dark:text-white text-sm placeholder-gray-400 dark:placeholder-gray-600 outline-none transition";
+const inpRO = "w-full px-4 py-3 bg-gray-100 dark:bg-[#0a0a14] border border-gray-200 dark:border-[#141420] rounded-2xl text-gray-500 text-sm cursor-not-allowed select-none";
+const iconCls = "absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-600 pointer-events-none";
 
 const METODOS_PAGO = ["Efectivo", "Transferencia bancaria", "Tigo Money", "Todos los métodos"];
 const METODOS_ENTREGA = ["Delivery propio", "Recogida en tienda", "Envío por encomienda", "Delivery + Recogida"];
@@ -26,13 +28,13 @@ function Campo({ label, children, hint, locked }: {
       <div className="flex items-center gap-2">
         <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">{label}</label>
         {locked && (
-          <span className="flex items-center gap-1 text-[10px] text-gray-700 bg-[#0f0f1e] border border-[#1a1a2e] px-2 py-0.5 rounded-full">
+          <span className="flex items-center gap-1 text-[10px] text-gray-500 dark:text-gray-700 bg-gray-100 dark:bg-[#0f0f1e] border border-gray-200 dark:border-[#1a1a2e] px-2 py-0.5 rounded-full">
             <Lock className="w-2.5 h-2.5" /> No editable
           </span>
         )}
       </div>
       {children}
-      {hint && <p className="text-[10px] text-gray-600">{hint}</p>}
+      {hint && <p className="text-[10px] text-gray-400 dark:text-gray-600">{hint}</p>}
     </div>
   );
 }
@@ -125,7 +127,9 @@ export default function MiPerfilPage() {
       {/* Toast */}
       {toast && (
         <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-2.5 px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold border
-          ${toast.ok ? "bg-[#0a1f14] border-emerald-500/30 text-emerald-300" : "bg-[#1f0a0a] border-red-500/30 text-red-300"}`}>
+          ${toast.ok
+            ? "bg-emerald-50 dark:bg-[#0a1f14] border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
+            : "bg-red-50 dark:bg-[#1f0a0a] border-red-300 dark:border-red-500/30 text-red-700 dark:text-red-300"}`}>
           {toast.ok ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 flex-shrink-0" />}
           {toast.msg}
         </div>
@@ -134,19 +138,19 @@ export default function MiPerfilPage() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <button onClick={() => router.push("/vendedor/dashboard")}
-          className="p-2 rounded-xl hover:bg-[#1a1a2e] transition text-gray-500">
+          className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-[#1a1a2e] transition text-gray-500">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-base font-black text-white">Mi perfil</h1>
-          <p className="text-xs text-gray-600">Actualiza los datos de tu tienda</p>
+          <h1 className="text-base font-black text-gray-900 dark:text-white">Mi perfil</h1>
+          <p className="text-xs text-gray-400 dark:text-gray-600">Actualiza los datos de tu tienda</p>
         </div>
       </div>
 
       <form onSubmit={guardar} className="space-y-5">
 
         {/* ── Logo ──────────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-5 bg-[#0f0f1a] border border-[#1a1a2e] rounded-3xl p-5">
+        <div className="flex items-center gap-5 bg-white dark:bg-[#0f0f1a] border border-gray-200 dark:border-[#1a1a2e] rounded-3xl p-5">
           <div className="relative flex-shrink-0 cursor-pointer group" onClick={() => fileRef.current?.click()}>
             <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gradient-to-br from-orange-600 to-red-700 flex items-center justify-center shadow-lg">
               {preview
@@ -157,7 +161,7 @@ export default function MiPerfilPage() {
               <Camera className="w-6 h-6 text-white" />
             </div>
             {logo && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full border-2 border-[#0f0f1a]" />
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full border-2 border-white dark:border-[#0f0f1a]" />
             )}
             <input ref={fileRef} type="file" accept="image/*" className="hidden"
               onChange={e => {
@@ -166,18 +170,18 @@ export default function MiPerfilPage() {
               }} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-black text-white text-base truncate">{vendedor.nombre_tienda}</p>
+            <p className="font-black text-gray-900 dark:text-white text-base truncate">{vendedor.nombre_tienda}</p>
             <p className="text-gray-500 text-xs mt-0.5">{vendedor.departamento}, {vendedor.municipio}</p>
             <button type="button" onClick={() => fileRef.current?.click()}
-              className="mt-2 text-xs text-orange-400 font-semibold hover:text-orange-300 transition flex items-center gap-1">
+              className="mt-2 text-xs text-orange-600 dark:text-orange-400 font-semibold hover:text-orange-500 dark:hover:text-orange-300 transition flex items-center gap-1">
               <Camera className="w-3 h-3" /> Cambiar logo
             </button>
           </div>
         </div>
 
         {/* ── Datos bloqueados (solo lectura) ───────────────────────────── */}
-        <div className="bg-[#0a0a14] border border-[#141420] rounded-3xl p-4 space-y-3">
-          <p className="text-[10px] font-bold text-gray-700 uppercase tracking-widest flex items-center gap-1.5">
+        <div className="bg-gray-50 dark:bg-[#0a0a14] border border-gray-200 dark:border-[#141420] rounded-3xl p-4 space-y-3">
+          <p className="text-[10px] font-bold text-gray-400 dark:text-gray-700 uppercase tracking-widest flex items-center gap-1.5">
             <Lock className="w-3 h-3" /> Datos de identidad — no editables
           </p>
           <div className="grid grid-cols-2 gap-2.5">
@@ -191,18 +195,18 @@ export default function MiPerfilPage() {
           <Campo label="Departamento" locked>
             <div className={inpRO}>{vendedor.departamento}</div>
           </Campo>
-          <p className="text-[10px] text-gray-700 leading-relaxed">
+          <p className="text-[10px] text-gray-400 dark:text-gray-700 leading-relaxed">
             Estos datos fueron verificados al registrarte. Para cambiarlos contacta al soporte.
           </p>
         </div>
 
         {/* ── Datos editables ────────────────────────────────────────────── */}
-        <div className="bg-[#0f0f1a] border border-[#1a1a2e] rounded-3xl p-5 space-y-4">
+        <div className="bg-white dark:bg-[#0f0f1a] border border-gray-200 dark:border-[#1a1a2e] rounded-3xl p-5 space-y-4">
           <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Información de la tienda</p>
 
           <Campo label="Nombre de la tienda">
             <div className="relative">
-              <Store className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 pointer-events-none" />
+              <Store className={iconCls} />
               <input value={form.nombre_tienda} onChange={e => setForm(p => ({...p, nombre_tienda: e.target.value}))}
                 required placeholder="Nombre de tu tienda"
                 className={inp + " pl-10"} />
@@ -211,7 +215,7 @@ export default function MiPerfilPage() {
 
           <Campo label="Nombre del propietario">
             <div className="relative">
-              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 pointer-events-none" />
+              <User className={iconCls} />
               <input value={form.propietario} onChange={e => setForm(p => ({...p, propietario: e.target.value}))}
                 required placeholder="Tu nombre completo"
                 className={inp + " pl-10"} />
@@ -221,7 +225,7 @@ export default function MiPerfilPage() {
           <div className="grid grid-cols-2 gap-3">
             <Campo label="Teléfono">
               <div className="relative">
-                <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 pointer-events-none" />
+                <Phone className={iconCls} />
                 <input value={form.telefono}
                   onChange={e => setForm(p => ({...p, telefono: e.target.value.replace(/\D/g,"").slice(0,8)}))}
                   required placeholder="9XXXXXXX" maxLength={8}
@@ -230,7 +234,7 @@ export default function MiPerfilPage() {
             </Campo>
             <Campo label="Correo electrónico">
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 pointer-events-none" />
+                <Mail className={iconCls} />
                 <input value={form.email} onChange={e => setForm(p => ({...p, email: e.target.value}))}
                   type="email" placeholder="correo@..."
                   className={inp + " pl-10"} />
@@ -240,7 +244,7 @@ export default function MiPerfilPage() {
 
           <Campo label="Municipio">
             <div className="relative">
-              <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 pointer-events-none" />
+              <Building2 className={iconCls} />
               <input value={form.municipio} onChange={e => setForm(p => ({...p, municipio: e.target.value}))}
                 required placeholder="Municipio"
                 className={inp + " pl-10"} />
@@ -249,7 +253,7 @@ export default function MiPerfilPage() {
 
           <Campo label="Dirección exacta">
             <div className="relative">
-              <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 pointer-events-none" />
+              <MapPin className={iconCls} />
               <input value={form.direccion_exacta} onChange={e => setForm(p => ({...p, direccion_exacta: e.target.value}))}
                 required placeholder="Colonia, calle, casa..."
                 className={inp + " pl-10"} />
@@ -258,12 +262,12 @@ export default function MiPerfilPage() {
         </div>
 
         {/* ── Ubicación Google Maps ──────────────────────────────────────── */}
-        <div className="bg-[#0f0f1a] border border-[#1a1a2e] rounded-3xl p-5 space-y-4">
+        <div className="bg-white dark:bg-[#0f0f1a] border border-gray-200 dark:border-[#1a1a2e] rounded-3xl p-5 space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Ubicación en Google Maps</p>
             {form.google_maps_url && (
               <a href={form.google_maps_url} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1 text-[10px] text-blue-400 hover:text-blue-300 transition">
+                className="flex items-center gap-1 text-[10px] text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition">
                 <ExternalLink className="w-3 h-3" /> Ver mapa
               </a>
             )}
@@ -272,7 +276,7 @@ export default function MiPerfilPage() {
           <Campo label="Enlace de Google Maps"
             hint="Abre Google Maps → busca tu tienda → comparte → copia el enlace corto (https://maps.app.goo.gl/...)">
             <div className="relative">
-              <Map className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 pointer-events-none" />
+              <Map className={iconCls} />
               <input value={form.google_maps_url} onChange={e => setForm(p => ({...p, google_maps_url: e.target.value}))}
                 placeholder="https://maps.app.goo.gl/..."
                 className={inp + " pl-10"} />
@@ -280,8 +284,8 @@ export default function MiPerfilPage() {
           </Campo>
 
           {/* Guía visual compacta */}
-          <div className="bg-blue-950/30 border border-blue-500/15 rounded-2xl p-3.5 space-y-2">
-            <p className="text-xs font-bold text-blue-400">¿Cómo obtener tu enlace?</p>
+          <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-500/15 rounded-2xl p-3.5 space-y-2">
+            <p className="text-xs font-bold text-blue-600 dark:text-blue-400">¿Cómo obtener tu enlace?</p>
             {[
               "Abre Google Maps en tu teléfono",
               "Busca tu tienda o ubícala en el mapa",
@@ -289,10 +293,10 @@ export default function MiPerfilPage() {
               "Pega el enlace aquí",
             ].map((paso, i) => (
               <div key={i} className="flex items-center gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-black flex items-center justify-center flex-shrink-0">
+                <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-black flex items-center justify-center flex-shrink-0">
                   {i + 1}
                 </span>
-                <p className="text-xs text-blue-300/70">{paso}</p>
+                <p className="text-xs text-blue-700/80 dark:text-blue-300/70">{paso}</p>
               </div>
             ))}
           </div>
@@ -300,44 +304,44 @@ export default function MiPerfilPage() {
           {/* Preview mini si tiene URL */}
           {form.google_maps_url && (
             <a href={form.google_maps_url} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-3 px-4 py-3 bg-emerald-900/20 border border-emerald-500/20 rounded-2xl hover:border-emerald-500/40 transition group">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center flex-shrink-0">
-                <MapPin className="w-4 h-4 text-emerald-400" />
+              className="flex items-center gap-3 px-4 py-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-500/20 rounded-2xl hover:border-emerald-400 dark:hover:border-emerald-500/40 transition group">
+              <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-500/15 flex items-center justify-center flex-shrink-0">
+                <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-emerald-300">Ubicación configurada</p>
-                <p className="text-[10px] text-emerald-700 truncate">{form.google_maps_url}</p>
+                <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">Ubicación configurada</p>
+                <p className="text-[10px] text-emerald-600/70 dark:text-emerald-700 truncate">{form.google_maps_url}</p>
               </div>
-              <ExternalLink className="w-3.5 h-3.5 text-emerald-600 group-hover:text-emerald-400 transition" />
+              <ExternalLink className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-600 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition" />
             </a>
           )}
         </div>
 
         {/* ── Métodos de pago y entrega ──────────────────────────────────── */}
-        <div className="bg-[#0f0f1a] border border-[#1a1a2e] rounded-3xl p-5 space-y-4">
+        <div className="bg-white dark:bg-[#0f0f1a] border border-gray-200 dark:border-[#1a1a2e] rounded-3xl p-5 space-y-4">
           <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Métodos aceptados</p>
 
           <Campo label="Método de pago">
             <div className="relative">
-              <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 pointer-events-none" />
+              <CreditCard className={iconCls} />
               <select value={form.tipo_pago} onChange={e => setForm(p => ({...p, tipo_pago: e.target.value}))}
                 className={inp + " pl-10 appearance-none"}>
                 <option value="">Seleccionar...</option>
                 {METODOS_PAGO.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
-              <ChevronRight className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 pointer-events-none rotate-90" />
+              <ChevronRight className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-600 pointer-events-none rotate-90" />
             </div>
           </Campo>
 
           <Campo label="Método de entrega">
             <div className="relative">
-              <Truck className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 pointer-events-none" />
+              <Truck className={iconCls} />
               <select value={form.tipo_entrega} onChange={e => setForm(p => ({...p, tipo_entrega: e.target.value}))}
                 className={inp + " pl-10 appearance-none"}>
                 <option value="">Seleccionar...</option>
                 {METODOS_ENTREGA.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
-              <ChevronRight className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 pointer-events-none rotate-90" />
+              <ChevronRight className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-600 pointer-events-none rotate-90" />
             </div>
           </Campo>
         </div>
@@ -352,7 +356,7 @@ export default function MiPerfilPage() {
           </button>
 
           <button type="button" onClick={logout}
-            className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#0f0f1a] border border-[#1a1a2e] hover:border-red-500/30 hover:text-red-400 text-gray-500 font-semibold rounded-2xl text-sm transition-all">
+            className="w-full flex items-center justify-center gap-2 py-3.5 bg-white dark:bg-[#0f0f1a] border border-gray-200 dark:border-[#1a1a2e] hover:border-red-300 dark:hover:border-red-500/30 hover:text-red-600 dark:hover:text-red-400 text-gray-500 font-semibold rounded-2xl text-sm transition-all">
             <LogOut className="w-4 h-4" /> Cerrar sesión
           </button>
         </div>
