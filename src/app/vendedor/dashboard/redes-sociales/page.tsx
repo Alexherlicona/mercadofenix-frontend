@@ -191,27 +191,31 @@ export default function RedesSociales() {
 
   // ════════════════════════════════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-[#080810] pb-24">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#080810] pb-24">
 
       {/* Toast */}
       {toast && (
         <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-[999] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl border text-sm font-semibold pointer-events-none
-          ${toast.tipo==="ok"?"bg-[#0a1f14] border-emerald-500/40 text-emerald-200":toast.tipo==="err"?"bg-[#1f0a0a] border-red-500/40 text-red-200":"bg-[#0a0a1f] border-blue-500/40 text-blue-200"}`}>
-          {toast.tipo==="ok"?<CheckCircle2 className="w-4 h-4 text-emerald-400"/>:toast.tipo==="err"?<AlertTriangle className="w-4 h-4 text-red-400"/>:<Info className="w-4 h-4 text-blue-400"/>}
+          ${toast.tipo==="ok"
+            ?"bg-emerald-50 dark:bg-[#0a1f14] border-emerald-300 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-200"
+            :toast.tipo==="err"
+            ?"bg-red-50 dark:bg-[#1f0a0a] border-red-300 dark:border-red-500/40 text-red-700 dark:text-red-200"
+            :"bg-blue-50 dark:bg-[#0a0a1f] border-blue-300 dark:border-blue-500/40 text-blue-700 dark:text-blue-200"}`}>
+          {toast.tipo==="ok"?<CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400"/>:toast.tipo==="err"?<AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400"/>:<Info className="w-4 h-4 text-blue-600 dark:text-blue-400"/>}
           {toast.msg}
         </div>
       )}
 
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-[#080810]/95 backdrop-blur-xl border-b border-white/[0.05]">
+      <div className="sticky top-0 z-30 bg-white/95 dark:bg-[#080810]/95 backdrop-blur-xl border-b border-gray-200 dark:border-white/[0.05]">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-4">
           <button onClick={() => router.push("/vendedor/dashboard")}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-500 hover:text-white transition">
+            className="p-2 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-500 hover:text-gray-900 dark:hover:text-white transition">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1">
-            <h1 className="text-base font-black text-white">Redes Sociales</h1>
-            <p className="text-xs text-gray-600">Publica tus productos automáticamente</p>
+            <h1 className="text-base font-black text-gray-900 dark:text-white">Redes Sociales</h1>
+            <p className="text-xs text-gray-400 dark:text-gray-600">Publica tus productos automáticamente</p>
           </div>
         </div>
       </div>
@@ -221,15 +225,15 @@ export default function RedesSociales() {
         {/* ── Banner modo actual ───────────────────────────────────────── */}
         <div className={`flex items-start gap-3 px-4 py-3.5 rounded-2xl border ${
           conexiones.some(c => c.conectada)
-            ? "bg-emerald-950/30 border-emerald-500/20"
-            : "bg-blue-950/20 border-blue-500/15"
+            ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-500/20"
+            : "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-500/15"
         }`}>
           {conexiones.some(c => c.conectada)
-            ? <Zap className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
-            : <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+            ? <Zap className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+            : <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
           }
           <div>
-            <p className="text-white font-bold text-sm">
+            <p className="text-gray-900 dark:text-white font-bold text-sm">
               {conexiones.some(c => c.conectada) ? "Publicación automática activa" : "Modo compartir manual activo"}
             </p>
             <p className="text-gray-500 text-xs mt-0.5 leading-relaxed">
@@ -243,7 +247,7 @@ export default function RedesSociales() {
         {/* ── Cards de redes ───────────────────────────────────────────── */}
         {cargando ? (
           <div className="space-y-3">
-            {[1,2].map(i => <div key={i} className="h-36 rounded-2xl bg-white/5 animate-pulse" />)}
+            {[1,2].map(i => <div key={i} className="h-36 rounded-2xl bg-gray-200 dark:bg-white/5 animate-pulse" />)}
           </div>
         ) : (
           <div className="space-y-4">
@@ -256,7 +260,7 @@ export default function RedesSociales() {
 
               return (
                 <div key={red} className={`rounded-2xl border overflow-hidden transition-all
-                  ${activa ? "border-white/[0.1] bg-white/[0.03]" : "border-white/[0.06] bg-white/[0.02]"}`}>
+                  ${activa ? "border-gray-300 dark:border-white/[0.1] bg-gray-50 dark:bg-white/[0.03]" : "border-gray-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02]"}`}>
 
                   {/* Header de la tarjeta */}
                   <div className="flex items-center gap-4 p-5">
@@ -266,14 +270,14 @@ export default function RedesSociales() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-white font-bold text-sm">{cfg.nombre}</p>
+                        <p className="text-gray-900 dark:text-white font-bold text-sm">{cfg.nombre}</p>
                         {activa && (
-                          <span className="flex items-center gap-1 bg-emerald-500/15 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/20">
+                          <span className="flex items-center gap-1 bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-500/20">
                             <Wifi className="w-2.5 h-2.5" /> Conectado
                           </span>
                         )}
                         {!activa && (
-                          <span className="flex items-center gap-1 bg-gray-500/10 text-gray-500 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-white/[0.07]">
+                          <span className="flex items-center gap-1 bg-gray-100 dark:bg-gray-500/10 text-gray-500 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-gray-200 dark:border-white/[0.07]">
                             <WifiOff className="w-2.5 h-2.5" /> Sin conectar
                           </span>
                         )}
@@ -284,12 +288,12 @@ export default function RedesSociales() {
 
                   {/* Info si conectado */}
                   {activa && conexion?.nombre_pagina && (
-                    <div className="mx-5 mb-4 flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+                    <div className="mx-5 mb-4 flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.06]">
                       {conexion.foto_pagina && (
                         <img src={conexion.foto_pagina} className="w-8 h-8 rounded-lg object-cover" />
                       )}
                       <div className="flex-1">
-                        <p className="text-white text-sm font-semibold">{conexion.nombre_pagina}</p>
+                        <p className="text-gray-900 dark:text-white text-sm font-semibold">{conexion.nombre_pagina}</p>
                         {conexion.ultimo_post && (
                           <p className="text-gray-500 text-xs">
                             Última publicación: {new Date(conexion.ultimo_post).toLocaleDateString("es-HN")}
@@ -298,8 +302,8 @@ export default function RedesSociales() {
                       </div>
                       {conexion.posts_total !== undefined && (
                         <div className="text-right">
-                          <p className="text-white font-black text-lg leading-none">{conexion.posts_total}</p>
-                          <p className="text-gray-600 text-[10px]">publicaciones</p>
+                          <p className="text-gray-900 dark:text-white font-black text-lg leading-none">{conexion.posts_total}</p>
+                          <p className="text-gray-400 dark:text-gray-600 text-[10px]">publicaciones</p>
                         </div>
                       )}
                     </div>
@@ -307,11 +311,11 @@ export default function RedesSociales() {
 
                   {/* Permisos */}
                   <div className="mx-5 mb-4">
-                    <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-2">Permisos requeridos</p>
+                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-600 uppercase tracking-widest mb-2">Permisos requeridos</p>
                     <div className="flex flex-wrap gap-1.5">
                       {cfg.permisos.map(p => (
-                        <span key={p} className="flex items-center gap-1 bg-white/5 text-gray-400 text-[10px] px-2 py-1 rounded-lg border border-white/[0.07]">
-                          <Shield className="w-2.5 h-2.5 text-gray-600" /> {p}
+                        <span key={p} className="flex items-center gap-1 bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 text-[10px] px-2 py-1 rounded-lg border border-gray-200 dark:border-white/[0.07]">
+                          <Shield className="w-2.5 h-2.5 text-gray-400 dark:text-gray-600" /> {p}
                         </span>
                       ))}
                     </div>
@@ -332,15 +336,15 @@ export default function RedesSociales() {
                         </button>
                       ) : (
                         // Instagram: se conecta automáticamente al conectar Facebook
-                        <div className="flex-1 flex items-center gap-2 px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                          <Info className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                        <div className="flex-1 flex items-center gap-2 px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06]">
+                          <Info className="w-4 h-4 text-gray-400 dark:text-gray-600 flex-shrink-0" />
                           <p className="text-gray-500 text-xs">Se conecta automáticamente al vincular Facebook. Requiere cuenta Instagram Business.</p>
                         </div>
                       )
                     ) : (
                       <>
                         <button onClick={() => desconectar(red)} disabled={esCargando}
-                          className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-600/10 hover:bg-red-600/20 text-red-400 font-semibold text-sm border border-red-500/20 transition disabled:opacity-50">
+                          className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-600/10 hover:bg-red-100 dark:hover:bg-red-600/20 text-red-600 dark:text-red-400 font-semibold text-sm border border-red-200 dark:border-red-500/20 transition disabled:opacity-50">
                           {esCargando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                           Desconectar
                         </button>
@@ -348,7 +352,7 @@ export default function RedesSociales() {
                           setConectando(red);
                           conectarFacebook().then(() => setConectando(null));
                         }} disabled={esCargando}
-                          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 hover:bg-white/8 text-gray-400 font-semibold text-sm border border-white/[0.07] transition disabled:opacity-50">
+                          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/8 text-gray-500 dark:text-gray-400 font-semibold text-sm border border-gray-200 dark:border-white/[0.07] transition disabled:opacity-50">
                           {esCargando ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
                           Reconectar
                         </button>
@@ -362,10 +366,10 @@ export default function RedesSociales() {
         )}
 
         {/* ── Setup guide ─────────────────────────────────────────────── */}
-        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-          <div className="px-5 py-4 border-b border-white/[0.05]">
-            <h3 className="text-white font-bold text-sm flex items-center gap-2">
-              <Settings className="w-4 h-4 text-orange-400" /> Configuración para administradores
+        <div className="rounded-2xl border border-gray-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-200 dark:border-white/[0.05]">
+            <h3 className="text-gray-900 dark:text-white font-bold text-sm flex items-center gap-2">
+              <Settings className="w-4 h-4 text-orange-600 dark:text-orange-400" /> Configuración para administradores
             </h3>
             <p className="text-gray-500 text-xs mt-0.5">Pasos necesarios para activar la publicación automática</p>
           </div>
@@ -396,26 +400,26 @@ export default function RedesSociales() {
               },
             ].map(step => (
               <div key={step.n} className="flex gap-3">
-                <div className="w-6 h-6 rounded-full bg-orange-500/15 border border-orange-500/25 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-orange-400 text-[10px] font-black">{step.n}</span>
+                <div className="w-6 h-6 rounded-full bg-orange-100 dark:bg-orange-500/15 border border-orange-300 dark:border-orange-500/25 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-orange-600 dark:text-orange-400 text-[10px] font-black">{step.n}</span>
                 </div>
                 <div className="flex-1">
-                  <p className="text-white text-sm font-semibold">{step.titulo}</p>
+                  <p className="text-gray-900 dark:text-white text-sm font-semibold">{step.titulo}</p>
                   <p className="text-gray-500 text-xs mt-0.5 leading-relaxed">{step.desc}</p>
                   {step.link && (
                     <a href={step.link} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 mt-1.5 text-xs text-orange-400 hover:text-orange-300 transition">
+                      className="inline-flex items-center gap-1 mt-1.5 text-xs text-orange-600 dark:text-orange-400 hover:text-orange-500 dark:hover:text-orange-300 transition">
                       {step.linkLabel} <ExternalLink className="w-3 h-3" />
                     </a>
                   )}
                   {step.showCopy && (
-                    <div className="flex items-center gap-2 mt-2 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08]">
-                      <code className="text-xs text-blue-300 flex-1 truncate font-mono">
+                    <div className="flex items-center gap-2 mt-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.08]">
+                      <code className="text-xs text-blue-700 dark:text-blue-300 flex-1 truncate font-mono">
                         {typeof window !== "undefined" ? window.location.origin : PLATAFORMA_URL}/api/auth/facebook/callback
                       </code>
                       <button onClick={copiarCallbackURL}
-                        className="text-gray-500 hover:text-white transition flex-shrink-0">
-                        {copiado ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition flex-shrink-0">
+                        {copiado ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                       </button>
                     </div>
                   )}
@@ -427,13 +431,13 @@ export default function RedesSociales() {
 
         {/* ── Link a docs de Meta ──────────────────────────────────────── */}
         <a href="https://developers.facebook.com/docs/pages/publishing" target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12] hover:bg-white/[0.04] transition group">
-          <Globe className="w-5 h-5 text-gray-600 group-hover:text-white transition flex-shrink-0" />
+          className="flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-gray-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] hover:border-gray-300 dark:hover:border-white/[0.12] hover:bg-gray-50 dark:hover:bg-white/[0.04] transition group">
+          <Globe className="w-5 h-5 text-gray-400 dark:text-gray-600 group-hover:text-gray-900 dark:group-hover:text-white transition flex-shrink-0" />
           <div className="flex-1">
-            <p className="text-white text-sm font-semibold">Documentación oficial de Meta</p>
+            <p className="text-gray-900 dark:text-white text-sm font-semibold">Documentación oficial de Meta</p>
             <p className="text-gray-500 text-xs">Pages Publishing API · Graph API v19.0</p>
           </div>
-          <ExternalLink className="w-4 h-4 text-gray-600 group-hover:text-orange-400 transition" />
+          <ExternalLink className="w-4 h-4 text-gray-400 dark:text-gray-600 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition" />
         </a>
 
       </div>
