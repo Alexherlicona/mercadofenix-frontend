@@ -138,7 +138,9 @@ function useDragSort<T>(items: T[], setItems: React.Dispatch<React.SetStateActio
 }
 
 // ── UI atoms ──────────────────────────────────────────────────────────────────
-const inp = "w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder-gray-600 focus:border-orange-500/50 focus:bg-white/8 outline-none transition";
+// Claro por defecto, con dark: para el tema oscuro — misma convención que el
+// resto del dashboard de vendedor.
+const inp = "w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white text-sm placeholder-gray-400 dark:placeholder-gray-600 focus:border-orange-500 dark:focus:border-orange-500/50 focus:bg-white dark:focus:bg-white/8 outline-none transition";
 const sel = inp + " appearance-none cursor-pointer";
 
 function F({ t, hint, children }: { t: string; hint?: string; children: React.ReactNode }) {
@@ -146,17 +148,17 @@ function F({ t, hint, children }: { t: string; hint?: string; children: React.Re
     <div>
       <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">{t}</p>
       {children}
-      {hint && <p className="text-[10px] text-gray-600 mt-0.5">{hint}</p>}
+      {hint && <p className="text-[10px] text-gray-400 dark:text-gray-600 mt-0.5">{hint}</p>}
     </div>
   );
 }
 function Tog({ v, onChange, label }: { v: boolean; onChange: (x: boolean) => void; label: string }) {
   return (
     <label className="flex items-center gap-2.5 cursor-pointer select-none">
-      <div onClick={() => onChange(!v)} className={`w-9 h-5 rounded-full border transition-all relative flex-shrink-0 ${v ? "bg-orange-500 border-orange-500" : "bg-white/8 border-white/15"}`}>
+      <div onClick={() => onChange(!v)} className={`w-9 h-5 rounded-full border transition-all relative flex-shrink-0 ${v ? "bg-orange-500 border-orange-500" : "bg-gray-200 dark:bg-white/8 border-gray-300 dark:border-white/15"}`}>
         <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${v ? "left-[18px]" : "left-0.5"}`} />
       </div>
-      <span className="text-xs text-gray-300">{label}</span>
+      <span className="text-xs text-gray-700 dark:text-gray-300">{label}</span>
     </label>
   );
 }
@@ -228,41 +230,41 @@ function ModalCompartir({ producto, vendedor, onClose }: { producto: Producto; v
   const todasOk = selec.size > 0 && Array.from(selec).every(r => estados[r]?.estado === "ok");
 
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="w-full sm:max-w-md bg-[#0e0e1a] sm:rounded-3xl border border-white/[0.08] shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]">
+    <div className="fixed inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="w-full sm:max-w-md bg-white dark:bg-[#0e0e1a] sm:rounded-3xl border border-gray-200 dark:border-white/[0.08] shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]">
 
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-white/[0.06] flex-shrink-0">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-white/[0.06] flex-shrink-0">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1877F2]/20 to-[#E1306C]/20 flex items-center justify-center">
-            <Share2 className="w-4 h-4 text-white" />
+            <Share2 className="w-4 h-4 text-gray-700 dark:text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-white font-black text-base">Publicar en redes</h2>
+            <h2 className="text-gray-900 dark:text-white font-black text-base">Publicar en redes</h2>
             <p className="text-gray-500 text-xs truncate">{producto.nombre}</p>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-500 hover:text-white transition"><X className="w-4 h-4"/></button>
+          <button onClick={onClose} className="p-2 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-500 hover:text-gray-900 dark:hover:text-white transition"><X className="w-4 h-4"/></button>
         </div>
 
         <div className="overflow-y-auto flex-1">
           <div className="p-5 space-y-5">
 
             {/* Preview del producto */}
-            <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-              <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-800 flex-shrink-0">
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06]">
+              <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-800 flex-shrink-0">
                 {producto.fotos?.[0]?.url
                   ? <img src={producto.fotos[0].url.startsWith("http") ? producto.fotos[0].url : `${API_URL}${producto.fotos[0].url}`} className="w-full h-full object-cover" />
-                  : <div className="w-full h-full flex items-center justify-center"><ImageIcon className="w-5 h-5 text-gray-600"/></div>}
+                  : <div className="w-full h-full flex items-center justify-center"><ImageIcon className="w-5 h-5 text-gray-400 dark:text-gray-600"/></div>}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-white text-sm font-bold truncate">{producto.nombre}</p>
+                <p className="text-gray-900 dark:text-white text-sm font-bold truncate">{producto.nombre}</p>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-orange-400 text-xs font-black">L{parseFloat(String(producto.precio_con_descuento || producto.precio)).toFixed(2)}</span>
-                  {producto.porcentaje_descuento > 0 && <span className="bg-red-500/20 text-red-400 text-[10px] font-bold px-1.5 py-0.5 rounded-full">-{producto.porcentaje_descuento}%</span>}
+                  <span className="text-orange-600 dark:text-orange-400 text-xs font-black">L{parseFloat(String(producto.precio_con_descuento || producto.precio)).toFixed(2)}</span>
+                  {producto.porcentaje_descuento > 0 && <span className="bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 text-[10px] font-bold px-1.5 py-0.5 rounded-full">-{producto.porcentaje_descuento}%</span>}
                 </div>
               </div>
-              <div className="flex items-center gap-1 bg-white/5 px-2 py-1.5 rounded-lg">
-                <Globe className="w-3 h-3 text-gray-600"/>
-                <span className="text-[10px] text-gray-600 font-mono">/{producto.id.slice(0,6)}</span>
+              <div className="flex items-center gap-1 bg-gray-100 dark:bg-white/5 px-2 py-1.5 rounded-lg">
+                <Globe className="w-3 h-3 text-gray-500 dark:text-gray-600"/>
+                <span className="text-[10px] text-gray-500 dark:text-gray-600 font-mono">/{producto.id.slice(0,6)}</span>
               </div>
             </div>
 
@@ -270,7 +272,7 @@ function ModalCompartir({ producto, vendedor, onClose }: { producto: Producto; v
             <div>
               <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-3">¿Dónde publicar?</p>
               {cargando ? (
-                <div className="grid grid-cols-2 gap-3">{[1,2].map(i => <div key={i} className="h-20 rounded-2xl bg-white/5 animate-pulse"/>)}</div>
+                <div className="grid grid-cols-2 gap-3">{[1,2].map(i => <div key={i} className="h-20 rounded-2xl bg-gray-100 dark:bg-white/5 animate-pulse"/>)}</div>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   {(["facebook","instagram"] as const).map(red => {
@@ -282,22 +284,22 @@ function ModalCompartir({ producto, vendedor, onClose }: { producto: Producto; v
                       <button key={red} onClick={() => setSelec(p => { const s = new Set(p); s.has(red) ? s.delete(red) : s.add(red); return s; })}
                         className={`relative flex flex-col items-start gap-2 p-4 rounded-2xl border-2 transition-all text-left
                           ${on && !est ? `border-[${r.color}]/40 bg-[${r.color}]/8` : ""}
-                          ${!on ? "border-white/[0.07] bg-white/[0.03] hover:border-white/[0.12]" : ""}
-                          ${est?.estado==="ok"   ? "border-emerald-500/40 bg-emerald-950/20" : ""}
-                          ${est?.estado==="error" ? "border-red-500/30 bg-red-950/15" : ""}`}>
-                        <div className={`absolute top-2.5 right-2.5 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${on ? "border-white bg-white" : "border-white/20"}`}>
+                          ${!on ? "border-gray-200 dark:border-white/[0.07] bg-gray-50 dark:bg-white/[0.03] hover:border-gray-300 dark:hover:border-white/[0.12]" : ""}
+                          ${est?.estado==="ok"   ? "border-emerald-300 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/20" : ""}
+                          ${est?.estado==="error" ? "border-red-300 dark:border-red-500/30 bg-red-50 dark:bg-red-950/15" : ""}`}>
+                        <div className={`absolute top-2.5 right-2.5 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${on ? "border-gray-900 dark:border-white bg-gray-900 dark:bg-white" : "border-gray-300 dark:border-white/20"}`}>
                           {on && <div className="w-2 h-2 rounded-full" style={{ background: r.color }}/>}
                         </div>
                         {r.icon}
                         <div>
-                          <p className="text-white text-sm font-bold">{r.nombre}</p>
+                          <p className="text-gray-900 dark:text-white text-sm font-bold">{r.nombre}</p>
                           {cx?.conectada
-                            ? <div className="flex items-center gap-1"><Wifi className="w-2.5 h-2.5 text-emerald-400"/><p className="text-[10px] text-emerald-400 truncate max-w-[90px]">{cx.nombre_pagina || "Conectado"}</p></div>
-                            : <div className="flex items-center gap-1"><WifiOff className="w-2.5 h-2.5 text-gray-600"/><p className="text-[10px] text-gray-600">Sin conectar</p></div>}
+                            ? <div className="flex items-center gap-1"><Wifi className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400"/><p className="text-[10px] text-emerald-600 dark:text-emerald-400 truncate max-w-[90px]">{cx.nombre_pagina || "Conectado"}</p></div>
+                            : <div className="flex items-center gap-1"><WifiOff className="w-2.5 h-2.5 text-gray-400 dark:text-gray-600"/><p className="text-[10px] text-gray-400 dark:text-gray-600">Sin conectar</p></div>}
                         </div>
-                        {est?.estado === "publicando" && <div className="absolute inset-0 rounded-2xl bg-black/60 flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin" style={{color:r.color}}/></div>}
-                        {est?.estado === "ok"         && <div className="absolute inset-0 rounded-2xl bg-emerald-950/60 flex flex-col items-center justify-center gap-1"><CheckCircle2 className="w-5 h-5 text-emerald-400"/><p className="text-[10px] text-emerald-400 font-bold">Publicado</p></div>}
-                        {est?.estado === "error"      && <div className="absolute inset-0 rounded-2xl bg-red-950/60 flex flex-col items-center justify-center gap-1 p-3"><AlertTriangle className="w-4 h-4 text-red-400"/><p className="text-[10px] text-red-400 font-bold text-center">{est.msg}</p></div>}
+                        {est?.estado === "publicando" && <div className="absolute inset-0 rounded-2xl bg-white/70 dark:bg-black/60 flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin" style={{color:r.color}}/></div>}
+                        {est?.estado === "ok"         && <div className="absolute inset-0 rounded-2xl bg-emerald-50/90 dark:bg-emerald-950/60 flex flex-col items-center justify-center gap-1"><CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400"/><p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">Publicado</p></div>}
+                        {est?.estado === "error"      && <div className="absolute inset-0 rounded-2xl bg-red-50/90 dark:bg-red-950/60 flex flex-col items-center justify-center gap-1 p-3"><AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400"/><p className="text-[10px] text-red-700 dark:text-red-400 font-bold text-center">{est.msg}</p></div>}
                       </button>
                     );
                   })}
@@ -305,10 +307,10 @@ function ModalCompartir({ producto, vendedor, onClose }: { producto: Producto; v
               )}
 
               {!cargando && (
-                <div className="flex items-start gap-2 mt-3 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.05]">
+                <div className="flex items-start gap-2 mt-3 px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.05]">
                   {conexiones.some(c => c.conectada)
-                    ? <><Zap className="w-3 h-3 text-yellow-400 flex-shrink-0 mt-0.5"/><p className="text-[11px] text-gray-500">Las redes <span className="text-white font-semibold">conectadas</span> se publican automáticamente. Las demás abren una ventana.</p></>
-                    : <><Radio className="w-3 h-3 text-blue-400 flex-shrink-0 mt-0.5"/><p className="text-[11px] text-gray-500">Se abrirá Facebook/Instagram con el contenido listo. <button onClick={() => window.open("/vendedor/dashboard/redes-sociales","_blank")} className="text-orange-400 underline">Conectar para automatizar →</button></p></>}
+                    ? <><Zap className="w-3 h-3 text-yellow-500 dark:text-yellow-400 flex-shrink-0 mt-0.5"/><p className="text-[11px] text-gray-500">Las redes <span className="text-gray-900 dark:text-white font-semibold">conectadas</span> se publican automáticamente. Las demás abren una ventana.</p></>
+                    : <><Radio className="w-3 h-3 text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5"/><p className="text-[11px] text-gray-500">Se abrirá Facebook/Instagram con el contenido listo. <button onClick={() => window.open("/vendedor/dashboard/redes-sociales","_blank")} className="text-orange-600 dark:text-orange-400 underline">Conectar para automatizar →</button></p></>}
                 </div>
               )}
             </div>
@@ -318,18 +320,18 @@ function ModalCompartir({ producto, vendedor, onClose }: { producto: Producto; v
               <div className="flex items-center justify-between mb-1.5">
                 <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Texto de publicación</p>
                 <div className="flex gap-3">
-                  <button onClick={() => setTexto(buildTexto(producto, vendedor, productoURL))} className="text-[10px] text-gray-600 hover:text-gray-400 transition">Restablecer</button>
+                  <button onClick={() => setTexto(buildTexto(producto, vendedor, productoURL))} className="text-[10px] text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 transition">Restablecer</button>
                   <button onClick={() => { navigator.clipboard.writeText(texto); setCopiado(true); setTimeout(()=>setCopiado(false),2000); }}
-                    className="flex items-center gap-1 text-[10px] text-orange-400 hover:text-orange-300 font-semibold transition">
+                    className="flex items-center gap-1 text-[10px] text-orange-600 dark:text-orange-400 hover:text-orange-500 dark:hover:text-orange-300 font-semibold transition">
                     {copiado ? <><Check className="w-3 h-3"/>Copiado</> : <><Copy className="w-3 h-3"/>Copiar</>}
                   </button>
                 </div>
               </div>
               <textarea value={texto} onChange={e => setTexto(e.target.value)} rows={7}
-                className="w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-gray-300 text-xs leading-relaxed font-mono focus:border-orange-500/40 outline-none resize-none transition"/>
+                className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.08] text-gray-700 dark:text-gray-300 text-xs leading-relaxed font-mono focus:border-orange-500 dark:focus:border-orange-500/40 outline-none resize-none transition"/>
               <div className="flex justify-between mt-1">
-                <p className="text-[10px] text-gray-600">El link lleva al producto en Mercado Fénix</p>
-                <p className={`text-[10px] ${texto.length > 2000 ? "text-red-400" : "text-gray-600"}`}>{texto.length}/2000</p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-600">El link lleva al producto en Mercado Fénix</p>
+                <p className={`text-[10px] ${texto.length > 2000 ? "text-red-500 dark:text-red-400" : "text-gray-400 dark:text-gray-600"}`}>{texto.length}/2000</p>
               </div>
             </div>
 
@@ -339,10 +341,10 @@ function ModalCompartir({ producto, vendedor, onClose }: { producto: Producto; v
                 <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Ver publicaciones</p>
                 {Object.values(estados).filter(e => e.estado === "ok" && e.post_url).map((e,i) => (
                   <a key={i} href={e.post_url} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-emerald-950/30 border border-emerald-500/20 hover:border-emerald-500/40 transition">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0"/>
-                    <p className="text-emerald-300 text-sm font-semibold flex-1">Ver publicación</p>
-                    <ExternalLink className="w-3.5 h-3.5 text-emerald-500"/>
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-500/20 hover:border-emerald-400 dark:hover:border-emerald-500/40 transition">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0"/>
+                    <p className="text-emerald-700 dark:text-emerald-300 text-sm font-semibold flex-1">Ver publicación</p>
+                    <ExternalLink className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-500"/>
                   </a>
                 ))}
               </div>
@@ -351,15 +353,15 @@ function ModalCompartir({ producto, vendedor, onClose }: { producto: Producto; v
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 p-5 border-t border-white/[0.06] space-y-3 bg-[#0e0e1a]">
+        <div className="flex-shrink-0 p-5 border-t border-gray-100 dark:border-white/[0.06] space-y-3 bg-white dark:bg-[#0e0e1a]">
           {todasOk && (
-            <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/20">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400"/>
-              <p className="text-emerald-300 text-sm font-semibold">¡Publicado en todas las redes seleccionadas!</p>
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-500/20">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400"/>
+              <p className="text-emerald-700 dark:text-emerald-300 text-sm font-semibold">¡Publicado en todas las redes seleccionadas!</p>
             </div>
           )}
           <div className="flex gap-3">
-            <button onClick={onClose} className="flex-1 py-3.5 rounded-2xl bg-white/5 hover:bg-white/8 text-gray-400 font-bold text-sm transition">Cerrar</button>
+            <button onClick={onClose} className="flex-1 py-3.5 rounded-2xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/8 text-gray-600 dark:text-gray-400 font-bold text-sm transition">Cerrar</button>
             <button onClick={publicarTodas} disabled={!selec.size || publicando || todasOk}
               className="flex-[2] py-3.5 rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-gradient-to-r from-[#1877F2] via-[#9b2f7f] to-[#E1306C] hover:opacity-90 text-white shadow-xl">
               {publicando ? <><Loader2 className="w-4 h-4 animate-spin"/>Publicando...</> : <><Share2 className="w-4 h-4"/>Publicar{selec.size > 0 ? ` (${selec.size})` : ""}</>}
@@ -546,37 +548,39 @@ export default function MisProductos() {
   );
 
   if (cargando) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#080810]">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#080810]">
       <div className="flex flex-col items-center gap-3">
-        <Loader2 className="w-10 h-10 text-orange-400 animate-spin"/>
-        <p className="text-orange-300 text-sm font-bold animate-pulse">Cargando productos...</p>
+        <Loader2 className="w-10 h-10 text-orange-500 dark:text-orange-400 animate-spin"/>
+        <p className="text-orange-600 dark:text-orange-300 text-sm font-bold animate-pulse">Cargando productos...</p>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#080810] pb-24">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#080810] pb-24 transition-colors">
 
       {/* Toast */}
       {toast && (
         <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl border text-sm font-semibold pointer-events-none
-          ${toast.tipo==="ok" ? "bg-[#0a1f14] border-emerald-500/40 text-emerald-200" : "bg-[#1f0a0a] border-red-500/40 text-red-200"}`}>
-          {toast.tipo==="ok" ? <CheckCircle2 className="w-4 h-4 text-emerald-400"/> : <AlertTriangle className="w-4 h-4 text-red-400"/>}
+          ${toast.tipo==="ok"
+            ? "bg-emerald-50 dark:bg-[#0a1f14] border-emerald-300 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-200"
+            : "bg-red-50 dark:bg-[#1f0a0a] border-red-300 dark:border-red-500/40 text-red-800 dark:text-red-200"}`}>
+          {toast.tipo==="ok" ? <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400"/> : <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400"/>}
           {toast.msg}
         </div>
       )}
 
       <button onClick={() => router.push("/vendedor/dashboard")}
-        className="fixed top-4 left-4 z-50 bg-black/80 backdrop-blur p-2.5 rounded-xl hover:bg-orange-600/80 transition shadow-xl border border-white/8">
-        <ArrowLeft className="w-5 h-5 text-white"/>
+        className="fixed top-4 left-4 z-50 bg-white/90 dark:bg-black/80 backdrop-blur p-2.5 rounded-xl hover:bg-orange-100 dark:hover:bg-orange-600/80 transition shadow-xl border border-gray-200 dark:border-white/8">
+        <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-white"/>
       </button>
 
       <div className="max-w-4xl mx-auto px-4 pt-16">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pt-2">
           <div>
-            <h1 className="text-2xl font-black text-white">Mis Productos</h1>
-            <p className="text-gray-600 text-xs mt-0.5">{productos.length} producto{productos.length!==1?"s":""} publicados</p>
+            <h1 className="text-2xl font-black text-gray-900 dark:text-white">Mis Productos</h1>
+            <p className="text-gray-500 dark:text-gray-600 text-xs mt-0.5">{productos.length} producto{productos.length!==1?"s":""} publicados</p>
           </div>
           <button onClick={() => router.push("/vendedor/dashboard/productos/nuevo")}
             className="flex items-center gap-2 bg-orange-600 hover:bg-orange-500 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition shadow-lg shadow-orange-900/30 hover:scale-[1.02] active:scale-95">
@@ -586,16 +590,16 @@ export default function MisProductos() {
 
         {/* Buscador */}
         <div className="relative mb-5">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-600 w-4 h-4"/>
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-600 w-4 h-4"/>
           <input value={filtro} onChange={e => setFiltro(e.target.value)} placeholder="Buscar por nombre o categoría..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/8 text-white text-sm placeholder-gray-600 focus:border-orange-500/40 outline-none transition"/>
-          {filtro && <button onClick={() => setFiltro("")} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-600 hover:text-white"><X className="w-3.5 h-3.5"/></button>}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/8 text-gray-900 dark:text-white text-sm placeholder-gray-400 dark:placeholder-gray-600 focus:border-orange-500 dark:focus:border-orange-500/40 outline-none transition"/>
+          {filtro && <button onClick={() => setFiltro("")} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-600 hover:text-gray-900 dark:hover:text-white"><X className="w-3.5 h-3.5"/></button>}
         </div>
 
         {/* Lista */}
         {filtrados.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-20 text-center">
-            <Package className="w-14 h-14 text-gray-800"/>
+            <Package className="w-14 h-14 text-gray-300 dark:text-gray-800"/>
             <p className="text-gray-500 font-semibold text-sm">{filtro ? "Sin resultados" : "Aún no tienes productos"}</p>
             {!filtro && <button onClick={() => router.push("/vendedor/dashboard/productos/nuevo")}
               className="mt-1 bg-orange-600 hover:bg-orange-500 text-white font-bold px-5 py-2 rounded-xl text-sm transition">
@@ -608,34 +612,34 @@ export default function MisProductos() {
               const fotoUrl = p.fotos?.[0]?.url ? p.fotos[0].url.startsWith("http") ? p.fotos[0].url : `${API_URL}${p.fotos[0].url}`: null;
               const pFinal  = p.porcentaje_descuento > 0 ? (p.precio*(1-p.porcentaje_descuento/100)).toFixed(2) : null;
               return (
-                <div key={p.id} className="flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.05] border border-white/[0.06] hover:border-white/[0.12] rounded-2xl p-3 transition-all">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-gray-800/80 flex-shrink-0">
+                <div key={p.id} className="flex items-center gap-3 bg-white dark:bg-white/[0.03] hover:bg-gray-50 dark:hover:bg-white/[0.05] border border-gray-200 dark:border-white/[0.06] hover:border-gray-300 dark:hover:border-white/[0.12] rounded-2xl p-3 transition-all shadow-sm dark:shadow-none">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-800/80 flex-shrink-0">
                     {fotoUrl ? <img src={fotoUrl} alt={p.nombre} className="w-full h-full object-cover" onError={e=>(e.currentTarget.style.display="none")}/>
-                      : <div className="w-full h-full flex items-center justify-center"><ImageIcon className="w-5 h-5 text-gray-700"/></div>}
+                      : <div className="w-full h-full flex items-center justify-center"><ImageIcon className="w-5 h-5 text-gray-400 dark:text-gray-700"/></div>}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-white font-semibold text-sm truncate">{p.nombre}</p>
+                    <p className="text-gray-900 dark:text-white font-semibold text-sm truncate">{p.nombre}</p>
                     <div className="flex flex-wrap gap-1.5 mt-1">
-                      <span className="text-[10px] bg-orange-900/40 text-orange-300 px-2 py-0.5 rounded-full">{p.categoria}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full ${p.tipo==="fisico"?"bg-blue-900/40 text-blue-300":"bg-purple-900/40 text-purple-300"}`}>{p.tipo}</span>
-                      {p.tipo==="fisico" && <span className={`text-[10px] px-2 py-0.5 rounded-full ${(p.stock??0)>0?"bg-green-900/40 text-green-400":"bg-red-900/40 text-red-400"}`}>Stock: {p.stock??0}</span>}
+                      <span className="text-[10px] bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 px-2 py-0.5 rounded-full">{p.categoria}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full ${p.tipo==="fisico"?"bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300":"bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300"}`}>{p.tipo}</span>
+                      {p.tipo==="fisico" && <span className={`text-[10px] px-2 py-0.5 rounded-full ${(p.stock??0)>0?"bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400":"bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400"}`}>Stock: {p.stock??0}</span>}
                     </div>
                   </div>
                   <div className="text-right hidden sm:block flex-shrink-0">
-                    {pFinal ? <><p className="text-gray-600 line-through text-xs">L{p.precio.toFixed(2)}</p><p className="text-red-400 font-black">L{pFinal}</p></>
-                      : <p className="text-green-400 font-black">L{p.precio.toFixed(2)}</p>}
+                    {pFinal ? <><p className="text-gray-400 dark:text-gray-600 line-through text-xs">L{p.precio.toFixed(2)}</p><p className="text-red-600 dark:text-red-400 font-black">L{pFinal}</p></>
+                      : <p className="text-green-600 dark:text-green-400 font-black">L{p.precio.toFixed(2)}</p>}
                   </div>
                   <div className="flex gap-1.5 flex-shrink-0">
                     {/* Compartir */}
                     <button onClick={() => setCompartiendo(p)}
-                      className="p-2.5 rounded-xl bg-gradient-to-br from-[#1877F2]/15 to-[#E1306C]/15 hover:from-[#1877F2]/30 hover:to-[#E1306C]/30 text-white/60 hover:text-white transition"
+                      className="p-2.5 rounded-xl bg-gradient-to-br from-[#1877F2]/15 to-[#E1306C]/15 hover:from-[#1877F2]/30 hover:to-[#E1306C]/30 text-gray-500 dark:text-white/60 hover:text-gray-900 dark:hover:text-white transition"
                       title="Compartir en redes sociales">
                       <Share2 className="w-4 h-4"/>
                     </button>
                     {/* Editar */}
-                    <button onClick={() => abrirEditar(p)} className="p-2.5 rounded-xl bg-blue-600/15 hover:bg-blue-600 text-blue-400 hover:text-white transition"><Edit className="w-4 h-4"/></button>
+                    <button onClick={() => abrirEditar(p)} className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-600/15 hover:bg-blue-600 text-blue-600 dark:text-blue-400 hover:text-white transition"><Edit className="w-4 h-4"/></button>
                     {/* Eliminar */}
-                    <button onClick={() => eliminar(p.id, p.nombre)} className="p-2.5 rounded-xl bg-red-600/15 hover:bg-red-600 text-red-400 hover:text-white transition"><Trash2 className="w-4 h-4"/></button>
+                    <button onClick={() => eliminar(p.id, p.nombre)} className="p-2.5 rounded-xl bg-red-100 dark:bg-red-600/15 hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white transition"><Trash2 className="w-4 h-4"/></button>
                   </div>
                 </div>
               );
@@ -651,14 +655,14 @@ export default function MisProductos() {
 
       {/* ── MODAL EDICIÓN ────────────────────────────────────────────────────── */}
       {editando && (
-        <div className="fixed inset-0 bg-black/95 z-50 flex items-stretch justify-center overflow-hidden">
-          <div className="w-full max-w-2xl bg-[#0c0c14] flex flex-col h-full border-x border-white/[0.06]">
+        <div className="fixed inset-0 bg-gray-100/95 dark:bg-black/95 z-50 flex items-stretch justify-center overflow-hidden">
+          <div className="w-full max-w-2xl bg-white dark:bg-[#0c0c14] flex flex-col h-full border-x border-gray-200 dark:border-white/[0.06]">
 
             {/* Header */}
-            <div className="flex items-center gap-3 px-5 py-4 border-b border-white/[0.07] flex-shrink-0">
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-200 dark:border-white/[0.07] flex-shrink-0">
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-500">Editando</p>
-                <h2 className="text-base font-black text-white truncate">{editando.nombre}</h2>
+                <h2 className="text-base font-black text-gray-900 dark:text-white truncate">{editando.nombre}</h2>
               </div>
               <div className="flex gap-2">
                 <button onClick={guardar} disabled={guardando}
@@ -666,14 +670,14 @@ export default function MisProductos() {
                   {guardando ? <Loader2 className="w-3.5 h-3.5 animate-spin"/> : <Save className="w-3.5 h-3.5"/>}
                   {guardando ? "Guardando..." : "Guardar"}
                 </button>
-                <button onClick={() => setEditando(null)} className="p-2 rounded-xl bg-white/5 hover:bg-red-600/40 text-gray-400 hover:text-white transition">
+                <button onClick={() => setEditando(null)} className="p-2 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-red-100 dark:hover:bg-red-600/40 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">
                   <X className="w-4 h-4"/>
                 </button>
               </div>
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-white/[0.07] flex-shrink-0 bg-white/[0.02]">
+            <div className="flex border-b border-gray-200 dark:border-white/[0.07] flex-shrink-0 bg-gray-50 dark:bg-white/[0.02]">
               {([
                 {id:"basico",   label:"Básico",   icon:Tag},
                 {id:"detalles", label:editando.tipo==="fisico"?"Físico":"Digital", icon:editando.tipo==="fisico"?Package:FileText},
@@ -681,7 +685,7 @@ export default function MisProductos() {
               ] as const).map(({id,label,icon:Icon}) => (
                 <button key={id} onClick={() => setTab(id)}
                   className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold transition-all border-b-2
-                    ${tab===id ? "border-orange-500 text-orange-400 bg-orange-500/5" : "border-transparent text-gray-500 hover:text-gray-300"}`}>
+                    ${tab===id ? "border-orange-500 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/5" : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"}`}>
                   <Icon className="w-3.5 h-3.5"/>{label}
                 </button>
               ))}
@@ -702,7 +706,7 @@ export default function MisProductos() {
                         <optgroup label="── Físico ──">{CATEGORIAS_FISICO.map(c=><option key={c}>{c}</option>)}</optgroup>
                         <optgroup label="── Digital ──">{CATEGORIAS_DIGITAL.map(c=><option key={c}>{c}</option>)}</optgroup>
                       </select>
-                      <ChevronDown className="absolute right-3 top-2.5 w-4 h-4 text-gray-500 pointer-events-none"/>
+                      <ChevronDown className="absolute right-3 top-2.5 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none"/>
                     </div>
                   </F>
                   <div className="grid grid-cols-2 gap-3">
@@ -714,10 +718,10 @@ export default function MisProductos() {
                     <F t="Descuento %"><input type="number" min="0" max="100" value={form.descuento||""} onChange={e=>setForm({...form,descuento:e.target.value})} placeholder="0" className={inp}/></F>
                   </div>
                   {form.precio && form.descuento && parseFloat(form.descuento)>0 && (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-950/30 border border-emerald-500/20">
-                      <Tag className="w-3.5 h-3.5 text-emerald-400"/>
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-500/20">
+                      <Tag className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"/>
                       <span className="text-xs text-gray-500">Precio final:</span>
-                      <span className="font-black text-emerald-400">L{(parseFloat(form.precio)*(1-parseFloat(form.descuento)/100)).toFixed(2)}</span>
+                      <span className="font-black text-emerald-600 dark:text-emerald-400">L{(parseFloat(form.precio)*(1-parseFloat(form.descuento)/100)).toFixed(2)}</span>
                     </div>
                   )}
                   <F t="Descripción"><textarea value={form.descripcion||""} onChange={e=>setForm({...form,descripcion:e.target.value})} rows={3} placeholder="Describe el producto..." className={inp+" resize-none"}/></F>
@@ -727,7 +731,7 @@ export default function MisProductos() {
                         <select value={form.idioma||"Español"} onChange={e=>setForm({...form,idioma:e.target.value})} className={sel}>
                           {["Español","Inglés","Portugués","Francés","Otro"].map(i=><option key={i}>{i}</option>)}
                         </select>
-                        <ChevronDown className="absolute right-3 top-2.5 w-4 h-4 text-gray-500 pointer-events-none"/>
+                        <ChevronDown className="absolute right-3 top-2.5 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none"/>
                       </div>
                     </F>
                     <F t="Etiquetas" hint="Separadas por coma"><input value={form.etiquetas||""} onChange={e=>setForm({...form,etiquetas:e.target.value})} placeholder="ropa, nike..." className={inp}/></F>
@@ -747,7 +751,7 @@ export default function MisProductos() {
                           <select value={form.condicion||"nuevo"} onChange={e=>setForm({...form,condicion:e.target.value})} className={sel}>
                             {CONDICIONES.map(c=><option key={c.v} value={c.v}>{c.l}</option>)}
                           </select>
-                          <ChevronDown className="absolute right-3 top-2.5 w-4 h-4 text-gray-500 pointer-events-none"/>
+                          <ChevronDown className="absolute right-3 top-2.5 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none"/>
                         </div>
                       </F>
                     )}
@@ -769,11 +773,11 @@ export default function MisProductos() {
                           <div key={i} className="flex gap-2">
                             <input value={v.key} onChange={e=>setVariantesEdit(p=>p.map((x,j)=>j===i?{...x,key:e.target.value}:x))} placeholder="Tipo" className={inp+" flex-1"}/>
                             <input value={v.value} onChange={e=>setVariantesEdit(p=>p.map((x,j)=>j===i?{...x,value:e.target.value}:x))} placeholder="Valores" className={inp+" flex-1"}/>
-                            <button onClick={()=>setVariantesEdit(p=>p.filter((_,j)=>j!==i))} className="p-2.5 text-gray-600 hover:text-red-400 transition"><X className="w-3.5 h-3.5"/></button>
+                            <button onClick={()=>setVariantesEdit(p=>p.filter((_,j)=>j!==i))} className="p-2.5 text-gray-400 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition"><X className="w-3.5 h-3.5"/></button>
                           </div>
                         ))}
                       </div>
-                      <button onClick={()=>setVariantesEdit(p=>[...p,{key:"",value:""}])} className="flex items-center gap-1.5 text-xs text-orange-400 hover:text-orange-300 mt-2 transition font-semibold">
+                      <button onClick={()=>setVariantesEdit(p=>[...p,{key:"",value:""}])} className="flex items-center gap-1.5 text-xs text-orange-600 dark:text-orange-400 hover:text-orange-500 dark:hover:text-orange-300 mt-2 transition font-semibold">
                         <Plus className="w-3.5 h-3.5"/> Agregar variante
                       </button>
                     </div>
@@ -828,7 +832,7 @@ export default function MisProductos() {
                               <option value="">N/A</option>
                               {NIVELES.map(n=><option key={n} value={n}>{n.charAt(0).toUpperCase()+n.slice(1)}</option>)}
                             </select>
-                            <ChevronDown className="absolute right-3 top-2.5 w-4 h-4 text-gray-500 pointer-events-none"/>
+                            <ChevronDown className="absolute right-3 top-2.5 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none"/>
                           </div>
                         </F>
                       )}
@@ -838,7 +842,7 @@ export default function MisProductos() {
                         <div className="flex flex-wrap gap-1.5 mt-1">
                           {COMPAT.map(c => (
                             <button key={c} onClick={()=>setCompatEdit(p=>p.includes(c)?p.filter(x=>x!==c):[...p,c])}
-                              className={`px-3 py-1 rounded-full text-xs font-semibold border transition ${compatEdit.includes(c)?"border-orange-500 bg-orange-500/10 text-orange-300":"border-white/10 text-gray-500 hover:border-white/20"}`}>
+                              className={`px-3 py-1 rounded-full text-xs font-semibold border transition ${compatEdit.includes(c)?"border-orange-500 bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-300":"border-gray-200 dark:border-white/10 text-gray-500 hover:border-gray-300 dark:hover:border-white/20"}`}>
                               {c}
                             </button>
                           ))}
@@ -850,7 +854,7 @@ export default function MisProductos() {
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                           {LICENCIAS.map(l => (
                             <button key={l.v} onClick={()=>setForm({...form,licencia:l.v})}
-                              className={`py-2 px-3 rounded-xl border text-xs font-semibold transition text-left ${form.licencia===l.v?"border-orange-500 bg-orange-500/10 text-orange-300":"border-white/8 text-gray-500 hover:border-white/15"}`}>
+                              className={`py-2 px-3 rounded-xl border text-xs font-semibold transition text-left ${form.licencia===l.v?"border-orange-500 bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-300":"border-gray-200 dark:border-white/8 text-gray-500 hover:border-gray-300 dark:hover:border-white/15"}`}>
                               {l.l}
                             </button>
                           ))}
@@ -864,7 +868,7 @@ export default function MisProductos() {
                       </div>
                     )}
                     {tiene("soporte") && (
-                      <div className="p-3 rounded-xl bg-white/[0.03] border border-white/8 space-y-3">
+                      <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/8 space-y-3">
                         <Tog v={form.incluye_soporte||false} onChange={v=>setForm({...form,incluye_soporte:v})} label="Incluye soporte al comprador"/>
                         {form.incluye_soporte && <F t="Días de soporte"><input type="number" min="1" value={form.dias_soporte||""} onChange={e=>setForm({...form,dias_soporte:e.target.value})} placeholder="30" className={inp}/></F>}
                         <Tog v={form.permite_reventa||false} onChange={v=>setForm({...form,permite_reventa:v})} label="Permite reventa"/>
@@ -888,7 +892,7 @@ export default function MisProductos() {
                             const marc = fotosAEliminar.has(foto.id);
                             return (
                               <div key={foto.id} {...dragExist.h(i)}
-                                className={`relative aspect-square rounded-xl overflow-hidden bg-gray-800/80 cursor-grab active:cursor-grabbing select-none transition-all
+                                className={`relative aspect-square rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-800/80 cursor-grab active:cursor-grabbing select-none transition-all
                                   ${dragExist.hov===i?"ring-2 ring-orange-500 scale-[1.04]":""}
                                   ${i===0&&!marc?"ring-2 ring-yellow-500/50":""}`}>
                                 <img src={foto.url.startsWith("http") ? foto.url : `${API_URL}${foto.url}`} alt="" className={`w-full h-full object-cover pointer-events-none transition ${marc?"opacity-20 grayscale":""}`}/>
@@ -911,7 +915,7 @@ export default function MisProductos() {
                         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                           {fotasNuevas.map((foto,i) => (
                             <div key={foto.uid} {...dragNueva.h(i)}
-                              className={`relative aspect-square rounded-xl overflow-hidden bg-gray-800/80 cursor-grab active:cursor-grabbing select-none transition-all ${dragNueva.hov===i?"ring-2 ring-orange-500 scale-[1.04]":""}`}>
+                              className={`relative aspect-square rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-800/80 cursor-grab active:cursor-grabbing select-none transition-all ${dragNueva.hov===i?"ring-2 ring-orange-500 scale-[1.04]":""}`}>
                               <img src={foto.preview} alt="" className="w-full h-full object-cover pointer-events-none"/>
                               {foto.optimizing && <div className="absolute inset-0 bg-black/65 flex flex-col items-center justify-center gap-1 pointer-events-none"><Loader2 className="w-4 h-4 text-orange-400 animate-spin"/><span className="text-[8px] text-orange-300 font-bold">Optimizando</span></div>}
                               {!foto.optimizing && foto.optimizedKB>0 && foto.optimizedKB<foto.originalKB && <div className="absolute bottom-1 left-1 bg-emerald-700/90 text-[8px] font-bold text-white px-1.5 py-0.5 rounded-md flex items-center gap-0.5 pointer-events-none"><Zap className="w-2 h-2"/>-{Math.round((1-foto.optimizedKB/foto.originalKB)*100)}%</div>}
@@ -922,32 +926,32 @@ export default function MisProductos() {
                         </div>
                       </div>
                     )}
-                    <label className="flex items-center gap-3 w-full px-4 py-3 rounded-xl border border-dashed border-white/10 hover:border-orange-500/30 cursor-pointer bg-white/[0.02] hover:bg-white/[0.04] transition group">
+                    <label className="flex items-center gap-3 w-full px-4 py-3 rounded-xl border border-dashed border-gray-300 dark:border-white/10 hover:border-orange-400 dark:hover:border-orange-500/30 cursor-pointer bg-gray-50 dark:bg-white/[0.02] hover:bg-gray-100 dark:hover:bg-white/[0.04] transition group">
                       <input type="file" multiple accept="image/*" className="hidden" onChange={e=>{const f=Array.from(e.target.files||[]).filter(x=>x.type.startsWith("image/"));if(f.length)procesarNuevas(f);e.target.value="";}}/>
-                      <Upload className="w-4 h-4 text-gray-600 group-hover:text-orange-400 transition"/>
-                      <span className="text-sm text-gray-500 group-hover:text-gray-300 transition">Agregar más fotos</span>
-                      <span className="text-xs text-gray-700 ml-auto">→ WebP optimizado</span>
+                      <Upload className="w-4 h-4 text-gray-400 dark:text-gray-600 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition"/>
+                      <span className="text-sm text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition">Agregar más fotos</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-700 ml-auto">→ WebP optimizado</span>
                     </label>
                     {(fotosAEliminar.size>0||fotasNuevas.length>0) && (
-                      <div className="px-3 py-2.5 rounded-xl bg-orange-950/30 border border-orange-500/20 text-xs space-y-1">
-                        {fotosAEliminar.size>0 && <p className="text-red-400">• {fotosAEliminar.size} foto{fotosAEliminar.size>1?"s":""} se eliminarán</p>}
-                        {fotasNuevas.length>0 && <p className="text-emerald-400">• {fotasNuevas.length} foto{fotasNuevas.length>1?"s nuevas":" nueva"} se agregarán</p>}
+                      <div className="px-3 py-2.5 rounded-xl bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-500/20 text-xs space-y-1">
+                        {fotosAEliminar.size>0 && <p className="text-red-600 dark:text-red-400">• {fotosAEliminar.size} foto{fotosAEliminar.size>1?"s":""} se eliminarán</p>}
+                        {fotasNuevas.length>0 && <p className="text-emerald-600 dark:text-emerald-400">• {fotasNuevas.length} foto{fotasNuevas.length>1?"s nuevas":" nueva"} se agregarán</p>}
                       </div>
                     )}
                   </>) : (
                     <div className="space-y-4">
                       {editando.archivo_key && (
-                        <div className="flex items-center gap-3 p-4 rounded-xl bg-white/[0.03] border border-white/8">
-                          <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center flex-shrink-0">
-                            <FileText className="w-5 h-5 text-orange-400"/>
+                        <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/8">
+                          <div className="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 flex items-center justify-center flex-shrink-0">
+                            <FileText className="w-5 h-5 text-orange-600 dark:text-orange-400"/>
                           </div>
                           <div>
-                            <p className="text-white text-sm font-semibold">Archivo actual</p>
+                            <p className="text-gray-900 dark:text-white text-sm font-semibold">Archivo actual</p>
                             <p className="text-gray-500 text-xs">{editando.formato_archivo?.toUpperCase()||"Archivo"}{editando.tamano_bytes ? ` · ${(editando.tamano_bytes/1024/1024).toFixed(2)} MB` : ""}</p>
                           </div>
                         </div>
                       )}
-                      <div className="px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/8">
+                      <div className="px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/8">
                         <p className="text-xs text-gray-500">Para reemplazar el archivo, elimina el producto y vuelve a crearlo con el archivo actualizado.</p>
                       </div>
                     </div>
@@ -957,7 +961,7 @@ export default function MisProductos() {
             </div>
 
             {/* Footer guardar */}
-            <div className="flex-shrink-0 px-5 py-4 border-t border-white/[0.07] bg-white/[0.02]">
+            <div className="flex-shrink-0 px-5 py-4 border-t border-gray-200 dark:border-white/[0.07] bg-gray-50 dark:bg-white/[0.02]">
               <button onClick={guardar} disabled={guardando}
                 className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 disabled:opacity-50 text-black font-black text-sm flex items-center justify-center gap-2 transition shadow-xl shadow-orange-900/20">
                 {guardando ? <><Loader2 className="w-4 h-4 animate-spin"/>Guardando...</> : <><Save className="w-4 h-4"/>Guardar cambios</>}
