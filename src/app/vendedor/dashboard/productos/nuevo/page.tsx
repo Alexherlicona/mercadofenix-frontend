@@ -127,7 +127,8 @@ function useDragSort(items: FotoItem[], setItems: React.Dispatch<React.SetStateA
 }
 
 // ── Componentes UI ────────────────────────────────────────────────────────────
-const inp = "w-full px-4 py-3 rounded-xl bg-[#0f0f1e] border border-[#1e1e30] text-white text-sm placeholder-gray-600 focus:border-orange-500/50 focus:bg-[#141428] outline-none transition";
+// Convención de tema: claro por defecto, oscuro con "dark:" (igual que dashboard/page.tsx)
+const inp = "w-full px-4 py-3 rounded-xl bg-white border border-gray-200 text-gray-900 text-sm placeholder-gray-400 focus:border-orange-500/50 focus:bg-orange-50/40 outline-none transition dark:bg-[#0f0f1e] dark:border-[#1e1e30] dark:text-white dark:placeholder-gray-600 dark:focus:bg-[#141428]";
 const sel = inp + " appearance-none cursor-pointer";
 
 function Lbl({ t, hint, children }: { t: string; hint?: string; children: React.ReactNode }) {
@@ -135,7 +136,7 @@ function Lbl({ t, hint, children }: { t: string; hint?: string; children: React.
     <div>
       <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">{t}</p>
       {children}
-      {hint && <p className="text-[11px] text-gray-600 mt-1">{hint}</p>}
+      {hint && <p className="text-[11px] text-gray-400 dark:text-gray-600 mt-1">{hint}</p>}
     </div>
   );
 }
@@ -144,10 +145,10 @@ function Toggle({ value, onChange, label }: { value: boolean; onChange: (v: bool
   return (
     <label className="flex items-center gap-3 cursor-pointer">
       <div onClick={() => onChange(!value)}
-        className={`w-10 h-5 rounded-full border transition relative flex-shrink-0 ${value ? "bg-orange-500 border-orange-500" : "bg-[#1a1a2e] border-[#2a2a3e]"}`}>
+        className={`w-10 h-5 rounded-full border transition relative flex-shrink-0 ${value ? "bg-orange-500 border-orange-500" : "bg-gray-200 border-gray-300 dark:bg-[#1a1a2e] dark:border-[#2a2a3e]"}`}>
         <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${value ? "left-5" : "left-0.5"}`} />
       </div>
-      <span className="text-sm text-gray-300">{label}</span>
+      <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
     </label>
   );
 }
@@ -388,22 +389,24 @@ export default function NuevoProducto() {
 
   // ════════════════════════════════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-[#080810] overflow-x-hidden">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#080810] overflow-x-hidden transition-colors">
 
       {/* Toast */}
       {toast && (
         <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-[999] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl border text-sm font-semibold pointer-events-none
-          ${toast.tipo === "ok" ? "bg-[#0a1f14] border-emerald-500/40 text-emerald-200" : "bg-[#1f0a0a] border-red-500/40 text-red-200"}`}>
-          {toast.tipo === "ok" ? <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" /> : <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />}
+          ${toast.tipo === "ok"
+            ? "bg-emerald-50 border-emerald-300 text-emerald-700 dark:bg-[#0a1f14] dark:border-emerald-500/40 dark:text-emerald-200"
+            : "bg-red-50 border-red-300 text-red-700 dark:bg-[#1f0a0a] dark:border-red-500/40 dark:text-red-200"}`}>
+          {toast.tipo === "ok" ? <CheckCircle2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400 flex-shrink-0" /> : <AlertTriangle className="w-4 h-4 text-red-500 dark:text-red-400 flex-shrink-0" />}
           {toast.msg}
         </div>
       )}
 
       {/* ── Header fijo ────────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-40 bg-[#080810]/95 backdrop-blur-xl border-b border-[#1a1a2e]">
+      <div className="sticky top-0 z-40 bg-white/95 dark:bg-[#080810]/95 backdrop-blur-xl border-b border-gray-200 dark:border-[#1a1a2e] transition-colors">
         <div className="max-w-2xl mx-auto px-3 py-3 flex items-center gap-2 overflow-hidden">
           <button onClick={() => router.push("/vendedor/dashboard/productos")}
-            className="p-2 rounded-xl bg-[#0f0f1e] hover:bg-[#141428] text-gray-500 hover:text-white transition">
+            className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-900 dark:bg-[#0f0f1e] dark:hover:bg-[#141428] dark:hover:text-white transition">
             <ArrowLeft className="w-5 h-5" />
           </button>
 
@@ -416,13 +419,13 @@ export default function NuevoProducto() {
             ] as const).map(({ n, label }, i) => (
               <div key={n} className="flex items-center gap-2">
                 {i > 0 && (
-                  <div className={`w-4 h-px transition-all sm:w-8 ${paso > i ? "bg-orange-500" : "bg-[#2a2a3e]"}`} />
+                  <div className={`w-4 h-px transition-all sm:w-8 ${paso > i ? "bg-orange-500" : "bg-gray-300 dark:bg-[#2a2a3e]"}`} />
                 )}
                 <button onClick={() => irPaso(n)}
                   className={`flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold transition-all sm:px-3 sm:py-1.5 sm:text-xs
                     ${paso === n ? "bg-orange-500 text-black shadow-lg shadow-orange-500/30" :
-                      paso > n ? "bg-emerald-600/20 text-emerald-400 border border-emerald-500/30" :
-                      "bg-[#1a1a2e] text-gray-500"}`}>
+                      paso > n ? "bg-emerald-100 text-emerald-600 border border-emerald-300 dark:bg-emerald-600/20 dark:text-emerald-400 dark:border-emerald-500/30" :
+                      "bg-gray-100 text-gray-500 dark:bg-[#1a1a2e] dark:text-gray-500"}`}>
                   {paso > n ? <CheckCircle2 className="w-3 h-3" /> : <span>{n}</span>}
                   {label}
                 </button>
@@ -441,8 +444,8 @@ export default function NuevoProducto() {
         {paso === 1 && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-black text-white tracking-tight">Información básica</h2>
-              <p className="text-sm text-gray-600 mt-1">¿Qué estás vendiendo?</p>
+              <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Información básica</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-600 mt-1">¿Qué estás vendiendo?</p>
             </div>
 
             {/* Tipo físico / digital */}
@@ -451,11 +454,11 @@ export default function NuevoProducto() {
                 <button key={t} onClick={() => { setTipo(t); setCategoria(""); }}
                   className={`py-5 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all font-bold text-sm
                     ${tipo === t
-                      ? "border-orange-500 bg-orange-500/8 text-orange-300"
-                      : "border-[#1e1e30] bg-[#0f0f1e] text-gray-500 hover:border-[#2a2a3e] hover:text-gray-300"}`}>
+                      ? "border-orange-500 bg-orange-50 text-orange-600 dark:bg-orange-500/8 dark:text-orange-300"
+                      : "border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:border-[#1e1e30] dark:bg-[#0f0f1e] dark:hover:border-[#2a2a3e] dark:hover:text-gray-300"}`}>
                   {t === "fisico"
-                    ? <Package className={`w-6 h-6 ${tipo===t?"text-orange-400":"text-gray-600"}`} />
-                    : <FileText className={`w-6 h-6 ${tipo===t?"text-orange-400":"text-gray-600"}`} />}
+                    ? <Package className={`w-6 h-6 ${tipo===t?"text-orange-500 dark:text-orange-400":"text-gray-400 dark:text-gray-600"}`} />
+                    : <FileText className={`w-6 h-6 ${tipo===t?"text-orange-500 dark:text-orange-400":"text-gray-400 dark:text-gray-600"}`} />}
                   {t === "fisico" ? "Producto físico" : "Producto digital"}
                   <span className="text-[11px] font-normal opacity-60">
                     {t === "fisico" ? "Envío al comprador" : "Descarga inmediata"}
@@ -481,24 +484,24 @@ export default function NuevoProducto() {
 
               {/* Dropdown sugerencias */}
               {mostrarSugs && sugs.length > 0 && (
-                <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-[#0f0f1a] border border-[#1e1e30] rounded-2xl shadow-2xl overflow-hidden">
-                  <div className="px-4 py-2.5 border-b border-[#181828] flex items-center gap-2">
+                <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-[#0f0f1a] border border-gray-200 dark:border-[#1e1e30] rounded-2xl shadow-2xl overflow-hidden">
+                  <div className="px-4 py-2.5 border-b border-gray-100 dark:border-[#181828] flex items-center gap-2">
                     <Sparkles className="w-3.5 h-3.5 text-orange-400" />
                     <span className="text-xs text-gray-500 font-medium">Productos similares — toca para precargar</span>
                   </div>
                   {sugs.map(s => (
                     <button key={s.id} onMouseDown={() => aplicarSug(s)}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#141428] transition text-left group">
-                      <div className="w-9 h-9 rounded-lg overflow-hidden bg-gray-800/80 flex-shrink-0">
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-[#141428] transition text-left group">
+                      <div className="w-9 h-9 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800/80 flex-shrink-0">
                         {s.fotos?.[0]?.url
                           ? <img src={`${API_URL}${s.fotos[0].url}`} className="w-full h-full object-cover" />
-                          : <ImageIcon className="w-4 h-4 text-gray-600 m-2.5" />}
+                          : <ImageIcon className="w-4 h-4 text-gray-400 dark:text-gray-600 m-2.5" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-semibold truncate">{s.nombre}</p>
-                        <p className="text-gray-500 text-xs">{s.categoria} · <span className="text-orange-400">L{s.precio}</span></p>
+                        <p className="text-gray-900 dark:text-white text-sm font-semibold truncate">{s.nombre}</p>
+                        <p className="text-gray-500 text-xs">{s.categoria} · <span className="text-orange-500 dark:text-orange-400">L{s.precio}</span></p>
                       </div>
-                      <ArrowRight className="w-3.5 h-3.5 text-gray-600 group-hover:text-orange-400 transition flex-shrink-0" />
+                      <ArrowRight className="w-3.5 h-3.5 text-gray-400 dark:text-gray-600 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition flex-shrink-0" />
                     </button>
                   ))}
                 </div>
@@ -519,8 +522,8 @@ export default function NuevoProducto() {
                   <button key={c.value} onClick={() => setCategoria(c.value)}
                     className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-semibold transition-all text-left
                       ${categoria === c.value
-                        ? "border-orange-500 bg-orange-500/10 text-orange-300"
-                        : "border-[#1e1e30] bg-[#0f0f1e] text-gray-500 hover:border-[#2a2a3e] hover:text-gray-300"}`}>
+                        ? "border-orange-500 bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-300"
+                        : "border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:border-[#1e1e30] dark:bg-[#0f0f1e] dark:hover:border-[#2a2a3e] dark:hover:text-gray-300"}`}>
                     <span className="text-base leading-none flex-shrink-0">{c.icon}</span>
                     <span className="truncate">{c.value}</span>
                   </button>
@@ -544,11 +547,11 @@ export default function NuevoProducto() {
             </div>
 
             {precioFinal && (
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-950/30 border border-emerald-500/20">
-                <Tag className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-500/20">
+                <Tag className="w-4 h-4 text-emerald-500 dark:text-emerald-400 flex-shrink-0" />
                 <span className="text-xs text-gray-500">Precio final al comprador:</span>
-                <span className="font-black text-emerald-400">L{precioFinal}</span>
-                <span className="text-xs text-gray-600 line-through ml-auto">L{parseFloat(precio).toFixed(2)}</span>
+                <span className="font-black text-emerald-600 dark:text-emerald-400">L{precioFinal}</span>
+                <span className="text-xs text-gray-400 dark:text-gray-600 line-through ml-auto">L{parseFloat(precio).toFixed(2)}</span>
               </div>
             )}
 
@@ -576,10 +579,10 @@ export default function NuevoProducto() {
         {paso === 2 && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-black text-white tracking-tight">
+              <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
                 {catConfig?.icon} Detalles de {categoria || "tu producto"}
               </h2>
-              <p className="text-sm text-gray-600 mt-1">Información específica de esta categoría</p>
+              <p className="text-sm text-gray-500 dark:text-gray-600 mt-1">Información específica de esta categoría</p>
             </div>
 
             {/* ── FÍSICO ────────────────────────────────────────────────── */}
@@ -604,12 +607,12 @@ export default function NuevoProducto() {
                     {CONDICIONES.map(c => (
                       <label key={c.v}
                         className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all
-                          ${condicion === c.v ? "border-orange-500 bg-orange-500/8" : "border-[#1c1c2e] bg-[#0c0c18] hover:border-[#252540]"}`}>
+                          ${condicion === c.v ? "border-orange-500 bg-orange-50 dark:bg-orange-500/8" : "border-gray-200 bg-gray-50 hover:border-gray-300 dark:border-[#1c1c2e] dark:bg-[#0c0c18] dark:hover:border-[#252540]"}`}>
                         <input type="radio" name="cond" value={c.v} checked={condicion === c.v} onChange={() => setCondicion(c.v)} className="hidden" />
-                        <div className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 transition ${condicion === c.v ? "border-orange-500 bg-orange-500" : "border-gray-600"}`} />
+                        <div className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 transition ${condicion === c.v ? "border-orange-500 bg-orange-500" : "border-gray-300 dark:border-gray-600"}`} />
                         <div>
-                          <p className={`text-sm font-semibold ${condicion === c.v ? "text-orange-300" : "text-gray-300"}`}>{c.l}</p>
-                          <p className="text-xs text-gray-600">{c.d}</p>
+                          <p className={`text-sm font-semibold ${condicion === c.v ? "text-orange-600 dark:text-orange-300" : "text-gray-700 dark:text-gray-300"}`}>{c.l}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-600">{c.d}</p>
                         </div>
                       </label>
                     ))}
@@ -704,13 +707,13 @@ export default function NuevoProducto() {
                         placeholder="Tipo" className={inp + " flex-1"} />
                       <input value={v.value} onChange={e => setVariantes(p => p.map((x,j)=>j===i?{...x,value:e.target.value}:x))}
                         placeholder="Opciones separadas por coma" className={inp + " flex-1"} />
-                      <button onClick={() => setVariantes(p => p.filter((_,j)=>j!==i))} className="p-3 text-gray-600 hover:text-red-400 transition">
+                      <button onClick={() => setVariantes(p => p.filter((_,j)=>j!==i))} className="p-3 text-gray-400 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition">
                         <X className="w-4 h-4" />
                       </button>
                     </div>
                   ))}
                   <button onClick={() => setVariantes(p => [...p, {key:"",value:""}])}
-                    className="flex items-center gap-1.5 text-xs text-orange-400 hover:text-orange-300 mt-3 transition font-semibold">
+                    className="flex items-center gap-1.5 text-xs text-orange-500 dark:text-orange-400 hover:text-orange-600 dark:hover:text-orange-300 mt-3 transition font-semibold">
                     <Plus className="w-3.5 h-3.5" /> Agregar otra variante
                   </button>
                 </div>
@@ -758,14 +761,14 @@ export default function NuevoProducto() {
                           placeholder="Ej: RAM" className={inp + " flex-1"} />
                         <input value={e.value} onChange={ev => setEspecificaciones(p => p.map((x,j)=>j===i?{...x,value:ev.target.value}:x))}
                           placeholder="Ej: 16 GB" className={inp + " flex-1"} />
-                        <button onClick={() => setEspecificaciones(p => p.filter((_,j)=>j!==i))} className="p-3 text-gray-600 hover:text-red-400 transition">
+                        <button onClick={() => setEspecificaciones(p => p.filter((_,j)=>j!==i))} className="p-3 text-gray-400 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition">
                           <X className="w-4 h-4" />
                         </button>
                       </div>
                     ))}
                   </div>
                   <button onClick={() => setEspecificaciones(p => [...p, {key:"",value:""}])}
-                    className="flex items-center gap-1.5 text-xs text-orange-400 hover:text-orange-300 mt-3 transition font-semibold">
+                    className="flex items-center gap-1.5 text-xs text-orange-500 dark:text-orange-400 hover:text-orange-600 dark:hover:text-orange-300 mt-3 transition font-semibold">
                     <Plus className="w-3.5 h-3.5" /> Agregar especificación
                   </button>
                 </div>
@@ -844,7 +847,7 @@ export default function NuevoProducto() {
                     {NIVELES.map(n => (
                       <button key={n} onClick={() => setNivel(nivel === n.toLowerCase() ? "" : n.toLowerCase())}
                         className={`px-4 py-2 rounded-xl text-xs font-bold border transition
-                          ${nivel === n.toLowerCase() ? "border-orange-500 bg-orange-500/10 text-orange-300" : "border-[#1c1c2e] text-gray-500 hover:border-[#252540]"}`}>
+                          ${nivel === n.toLowerCase() ? "border-orange-500 bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-300" : "border-gray-200 text-gray-500 hover:border-gray-300 dark:border-[#1c1c2e] dark:hover:border-[#252540]"}`}>
                         {n}
                       </button>
                     ))}
@@ -869,7 +872,7 @@ export default function NuevoProducto() {
                     {COMPAT.map(c => (
                       <button key={c} onClick={() => setCompatibilidad(p => p.includes(c) ? p.filter(x=>x!==c) : [...p,c])}
                         className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition
-                          ${compatibilidad.includes(c) ? "border-orange-500 bg-orange-500/10 text-orange-300" : "border-[#1c1c2e] text-gray-500 hover:border-[#252540]"}`}>
+                          ${compatibilidad.includes(c) ? "border-orange-500 bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-300" : "border-gray-200 text-gray-500 hover:border-gray-300 dark:border-[#1c1c2e] dark:hover:border-[#252540]"}`}>
                         {c}
                       </button>
                     ))}
@@ -884,12 +887,12 @@ export default function NuevoProducto() {
                     {LICENCIAS.map(l => (
                       <label key={l.v}
                         className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition
-                          ${licencia === l.v ? "border-orange-500 bg-orange-500/8" : "border-[#1c1c2e] bg-[#0c0c18] hover:border-[#252540]"}`}>
+                          ${licencia === l.v ? "border-orange-500 bg-orange-50 dark:bg-orange-500/8" : "border-gray-200 bg-gray-50 hover:border-gray-300 dark:border-[#1c1c2e] dark:bg-[#0c0c18] dark:hover:border-[#252540]"}`}>
                         <input type="radio" name="lic" value={l.v} checked={licencia===l.v} onChange={()=>setLicencia(l.v)} className="hidden"/>
-                        <div className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 ${licencia===l.v?"border-orange-500 bg-orange-500":"border-gray-600"}`}/>
+                        <div className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 ${licencia===l.v?"border-orange-500 bg-orange-500":"border-gray-300 dark:border-gray-600"}`}/>
                         <div>
-                          <p className={`text-sm font-semibold ${licencia===l.v?"text-orange-300":"text-gray-300"}`}>{l.l}</p>
-                          <p className="text-xs text-gray-600">{l.d}</p>
+                          <p className={`text-sm font-semibold ${licencia===l.v?"text-orange-600 dark:text-orange-300":"text-gray-700 dark:text-gray-300"}`}>{l.l}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-600">{l.d}</p>
                         </div>
                       </label>
                     ))}
@@ -911,7 +914,7 @@ export default function NuevoProducto() {
 
               {/* Soporte */}
               {tiene("soporte") && (
-                <div className="space-y-3 p-4 rounded-xl bg-[#0c0c18] border border-[#1c1c2e]">
+                <div className="space-y-3 p-4 rounded-xl bg-gray-50 border border-gray-200 dark:bg-[#0c0c18] dark:border-[#1c1c2e]">
                   <Toggle value={incluyeSoporte} onChange={setIncluyeSoporte} label="Incluye soporte al comprador" />
                   {incluyeSoporte && (
                     <Lbl t="Días de soporte" hint="Cuántos días responderás preguntas del comprador">
@@ -937,7 +940,7 @@ export default function NuevoProducto() {
 
             <div className="flex gap-3 pt-2">
               <button onClick={() => setPaso(1)}
-                className="flex-1 py-4 rounded-2xl bg-[#1a1a2e] hover:bg-[#22223a] text-gray-400 font-bold text-sm transition">
+                className="flex-1 py-4 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-500 dark:bg-[#1a1a2e] dark:hover:bg-[#22223a] dark:text-gray-400 font-bold text-sm transition">
                 ← Volver
               </button>
               <button onClick={() => irPaso(3)}
@@ -952,10 +955,10 @@ export default function NuevoProducto() {
         {paso === 3 && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-black text-white tracking-tight">
+              <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
                 {tipo === "fisico" ? "Fotos del producto" : "Archivo digital"}
               </h2>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-gray-500 dark:text-gray-600 mt-1">
                 {tipo === "fisico"
                   ? "Las fotos se convierten a WebP automáticamente. Arrastra para reordenar."
                   : "El archivo que recibirá el comprador al pagar."}
@@ -969,10 +972,10 @@ export default function NuevoProducto() {
                 onDragOver={e => e.preventDefault()}
                 onDrop={e => { e.preventDefault(); const f = Array.from(e.dataTransfer.files).filter(x => x.type.startsWith("image/")); if (f.length) procesarImagenes(f); }}
                 onClick={() => document.getElementById("foto-inp")?.click()}
-                className="border-2 border-dashed border-[#1e1e30] hover:border-orange-500/30 rounded-2xl p-10 text-center cursor-pointer transition-all group bg-[#0f0f1e] hover:bg-[#0f0f1e]">
-                <Camera className="w-10 h-10 text-gray-700 group-hover:text-orange-400 mx-auto mb-3 transition" />
-                <p className="text-gray-400 font-semibold text-sm">Arrastra imágenes aquí o toca para seleccionar</p>
-                <p className="text-gray-700 text-xs mt-1.5">JPG, PNG, WEBP — se optimizan a WebP automáticamente</p>
+                className="border-2 border-dashed border-gray-200 hover:border-orange-400 dark:border-[#1e1e30] dark:hover:border-orange-500/30 rounded-2xl p-10 text-center cursor-pointer transition-all group bg-gray-50 dark:bg-[#0f0f1e] hover:bg-gray-50 dark:hover:bg-[#0f0f1e]">
+                <Camera className="w-10 h-10 text-gray-400 dark:text-gray-700 group-hover:text-orange-500 dark:group-hover:text-orange-400 mx-auto mb-3 transition" />
+                <p className="text-gray-600 dark:text-gray-400 font-semibold text-sm">Arrastra imágenes aquí o toca para seleccionar</p>
+                <p className="text-gray-400 dark:text-gray-700 text-xs mt-1.5">JPG, PNG, WEBP — se optimizan a WebP automáticamente</p>
               </div>
               <input id="foto-inp" type="file" multiple accept="image/*" className="hidden"
                 onChange={e => { const f = Array.from(e.target.files || []).filter(x => x.type.startsWith("image/")); if (f.length) procesarImagenes(f); e.target.value = ""; }} />
@@ -981,11 +984,11 @@ export default function NuevoProducto() {
               {fotos.length > 0 && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs text-gray-600 flex items-center gap-1.5">
+                    <p className="text-xs text-gray-400 dark:text-gray-600 flex items-center gap-1.5">
                       <GripVertical className="w-3.5 h-3.5" /> Arrastra para cambiar el orden
                     </p>
                     {ahorroTotal > 0 && (
-                      <div className="flex items-center gap-1.5 text-xs text-emerald-400">
+                      <div className="flex items-center gap-1.5 text-xs text-emerald-500 dark:text-emerald-400">
                         <Zap className="w-3.5 h-3.5" />
                         Ahorraste {ahorroTotal} KB
                       </div>
@@ -995,7 +998,7 @@ export default function NuevoProducto() {
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
                     {fotos.map((foto, i) => (
                       <div key={foto.id} {...dragH(i)}
-                        className={`relative aspect-square rounded-xl overflow-hidden bg-gray-900 cursor-grab active:cursor-grabbing select-none transition-all
+                        className={`relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-900 cursor-grab active:cursor-grabbing select-none transition-all
                           ${dragHov === i ? "ring-2 ring-orange-500 scale-[1.04]" : ""}
                           ${i === 0 ? "ring-2 ring-yellow-500/50" : ""}`}>
                         <img src={foto.preview} className="w-full h-full object-cover pointer-events-none" />
@@ -1030,10 +1033,10 @@ export default function NuevoProducto() {
                       </div>
                     ))}
 
-                    <label className="aspect-square rounded-xl border-2 border-dashed border-[#1c1c2e] hover:border-orange-500/20 flex items-center justify-center cursor-pointer hover:bg-[#0f0f1e] transition group">
+                    <label className="aspect-square rounded-xl border-2 border-dashed border-gray-200 hover:border-orange-400 dark:border-[#1c1c2e] dark:hover:border-orange-500/20 flex items-center justify-center cursor-pointer hover:bg-gray-50 dark:hover:bg-[#0f0f1e] transition group">
                       <input type="file" multiple accept="image/*" className="hidden"
                         onChange={e => { const f = Array.from(e.target.files || []).filter(x => x.type.startsWith("image/")); if (f.length) procesarImagenes(f); e.target.value = ""; }} />
-                      <Plus className="w-5 h-5 text-gray-700 group-hover:text-orange-400 transition" />
+                      <Plus className="w-5 h-5 text-gray-400 dark:text-gray-700 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition" />
                     </label>
                   </div>
                 </div>
@@ -1045,16 +1048,16 @@ export default function NuevoProducto() {
               <div className="space-y-2">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm font-bold text-white">Imagen de portada</p>
-                    <p className="text-xs text-gray-600 mt-0.5">Aparecerá en la tarjeta del producto — sin ella la tarjeta queda vacía</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">Imagen de portada</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-600 mt-0.5">Aparecerá en la tarjeta del producto — sin ella la tarjeta queda vacía</p>
                   </div>
                   {portadaDigital && (
                     <button onClick={() => { if (portadaPreview) URL.revokeObjectURL(portadaPreview); setPortadaDigital(null); setPortadaPreview(null); }}
-                      className="text-xs text-red-400/60 hover:text-red-400 transition mt-0.5">Quitar</button>
+                      className="text-xs text-red-500/70 hover:text-red-500 dark:text-red-400/60 dark:hover:text-red-400 transition mt-0.5">Quitar</button>
                   )}
                 </div>
                 <label className={`flex items-center gap-4 w-full px-4 py-3.5 rounded-2xl border-2 border-dashed cursor-pointer transition-all
-                  ${portadaDigital ? "border-violet-500/40 bg-violet-950/15" : "border-[#1e1e30] hover:border-violet-400/30 bg-[#0f0f1e] hover:bg-[#0f0f1e]"}`}>
+                  ${portadaDigital ? "border-violet-400/50 bg-violet-50 dark:border-violet-500/40 dark:bg-violet-950/15" : "border-gray-200 hover:border-violet-400/40 bg-gray-50 dark:border-[#1e1e30] dark:hover:border-violet-400/30 dark:bg-[#0f0f1e] hover:bg-gray-50 dark:hover:bg-[#0f0f1e]"}`}>
                   <input type="file" className="hidden" accept="image/*"
                     onChange={e => {
                       const f = e.target.files?.[0];
@@ -1069,19 +1072,19 @@ export default function NuevoProducto() {
                       <img src={portadaPreview} alt="Portada"
                         className="w-16 h-16 rounded-xl object-cover flex-shrink-0 border border-violet-500/30" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-semibold truncate">{portadaDigital.name}</p>
+                        <p className="text-gray-900 dark:text-white text-sm font-semibold truncate">{portadaDigital.name}</p>
                         <p className="text-gray-500 text-xs mt-0.5">{(portadaDigital.size / 1024).toFixed(0)} KB · vista previa activa</p>
                       </div>
-                      <CheckCircle2 className="w-5 h-5 text-violet-400 flex-shrink-0" />
+                      <CheckCircle2 className="w-5 h-5 text-violet-500 dark:text-violet-400 flex-shrink-0" />
                     </>
                   ) : (
                     <>
-                      <div className="w-14 h-14 rounded-xl bg-[#0f0f1e] border border-[#1e1e30] flex items-center justify-center flex-shrink-0">
-                        <ImageIcon className="w-6 h-6 text-gray-600" />
+                      <div className="w-14 h-14 rounded-xl bg-gray-100 border border-gray-200 dark:bg-[#0f0f1e] dark:border-[#1e1e30] flex items-center justify-center flex-shrink-0">
+                        <ImageIcon className="w-6 h-6 text-gray-400 dark:text-gray-600" />
                       </div>
                       <div>
-                        <p className="text-gray-400 font-semibold text-sm">Añadir imagen de portada</p>
-                        <p className="text-gray-700 text-xs mt-0.5">JPG, PNG o WebP — representa tu producto</p>
+                        <p className="text-gray-600 dark:text-gray-400 font-semibold text-sm">Añadir imagen de portada</p>
+                        <p className="text-gray-400 dark:text-gray-700 text-xs mt-0.5">JPG, PNG o WebP — representa tu producto</p>
                       </div>
                     </>
                   )}
@@ -1090,30 +1093,30 @@ export default function NuevoProducto() {
 
               {/* ── ARCHIVO DIGITAL ──────────────────────────────────────────── */}
               <div className="space-y-2">
-                <p className="text-sm font-bold text-white">
-                  Archivo del producto <span className="text-red-400">*</span>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">
+                  Archivo del producto <span className="text-red-500 dark:text-red-400">*</span>
                 </p>
                 <label className={`flex flex-col items-center justify-center gap-4 w-full py-10 rounded-2xl border-2 border-dashed cursor-pointer transition-all
-                  ${archivoDigital ? "border-emerald-500/30 bg-emerald-950/15" : "border-[#1e1e30] hover:border-orange-500/25 bg-[#0f0f1e] hover:bg-[#0f0f1e]"}`}>
+                  ${archivoDigital ? "border-emerald-300 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-950/15" : "border-gray-200 hover:border-orange-400 bg-gray-50 dark:border-[#1e1e30] dark:hover:border-orange-500/25 dark:bg-[#0f0f1e] hover:bg-gray-50 dark:hover:bg-[#0f0f1e]"}`}>
                   <input type="file" className="hidden" accept={EXTENSIONES_ACEPTADAS}
                     onChange={e => setArchivoDigital(e.target.files?.[0] || null)} />
                   {archivoDigital ? (<>
                     <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
-                      <CheckCircle2 className="w-7 h-7 text-emerald-400" />
+                      <CheckCircle2 className="w-7 h-7 text-emerald-500 dark:text-emerald-400" />
                     </div>
                     <div className="text-center">
-                      <p className="text-white font-bold text-sm">{archivoDigital.name}</p>
+                      <p className="text-gray-900 dark:text-white font-bold text-sm">{archivoDigital.name}</p>
                       <p className="text-gray-500 text-xs mt-1">{(archivoDigital.size / 1024 / 1024).toFixed(2)} MB · {archivoDigital.name.split(".").pop()?.toUpperCase()}</p>
                     </div>
                     <button onClick={e => { e.preventDefault(); setArchivoDigital(null); }}
-                      className="text-xs text-red-400/70 hover:text-red-400 transition">Quitar y cambiar archivo</button>
+                      className="text-xs text-red-500/70 hover:text-red-500 dark:text-red-400/70 dark:hover:text-red-400 transition">Quitar y cambiar archivo</button>
                   </>) : (<>
-                    <div className="w-14 h-14 rounded-2xl bg-[#0f0f1e] border border-[#1e1e30] flex items-center justify-center">
-                      <Archive className="w-7 h-7 text-gray-600" />
+                    <div className="w-14 h-14 rounded-2xl bg-gray-100 border border-gray-200 dark:bg-[#0f0f1e] dark:border-[#1e1e30] flex items-center justify-center">
+                      <Archive className="w-7 h-7 text-gray-400 dark:text-gray-600" />
                     </div>
                     <div className="text-center">
-                      <p className="text-gray-400 font-semibold text-sm">Toca para seleccionar el archivo</p>
-                      <p className="text-gray-600 text-xs mt-1.5 max-w-xs">ZIP, PDF, PSD, Figma, MP4, MP3, DOCX,<br/>Python, JS, TypeScript y más de 30 formatos</p>
+                      <p className="text-gray-600 dark:text-gray-400 font-semibold text-sm">Toca para seleccionar el archivo</p>
+                      <p className="text-gray-400 dark:text-gray-600 text-xs mt-1.5 max-w-xs">ZIP, PDF, PSD, Figma, MP4, MP3, DOCX,<br/>Python, JS, TypeScript y más de 30 formatos</p>
                     </div>
                   </>)}
                 </label>
@@ -1122,7 +1125,7 @@ export default function NuevoProducto() {
             </>)}
 
             {/* Resumen antes de publicar */}
-            <div className="p-4 rounded-2xl bg-[#0f0f1e] border border-[#1e1e30] space-y-2">
+            <div className="p-4 rounded-2xl bg-white border border-gray-200 dark:bg-[#0f0f1e] dark:border-[#1e1e30] space-y-2">
               <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Resumen</p>
               {[
                 ["Nombre",    nombre],
@@ -1135,15 +1138,15 @@ export default function NuevoProducto() {
                 portadaDigital ? ["Portada", portadaDigital.name] : null,
               ].filter((x): x is [string, string] => Boolean(x)).map(([k, v]) => (
                 <div key={k as string} className="flex justify-between text-sm">
-                  <span className="text-gray-600">{k}</span>
-                  <span className="text-gray-300 font-medium text-right max-w-[60%] truncate">{v as string}</span>
+                  <span className="text-gray-400 dark:text-gray-600">{k}</span>
+                  <span className="text-gray-700 dark:text-gray-300 font-medium text-right max-w-[60%] truncate">{v as string}</span>
                 </div>
               ))}
             </div>
 
             <div className="flex gap-3">
               <button onClick={() => setPaso(2)}
-                className="flex-1 py-4 rounded-2xl bg-[#1a1a2e] hover:bg-[#22223a] text-gray-400 font-bold text-sm transition">
+                className="flex-1 py-4 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-500 dark:bg-[#1a1a2e] dark:hover:bg-[#22223a] dark:text-gray-400 font-bold text-sm transition">
                 ← Volver
               </button>
               <button onClick={guardar} disabled={guardando}
@@ -1242,17 +1245,17 @@ function ModalCompartirPost({
   const todoOk = Array.from(selec).every(r => estados[r]?.estado === "ok");
 
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="w-full sm:max-w-md bg-[#0e0e1a] sm:rounded-3xl border border-[#1c1c2e] shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="w-full sm:max-w-md bg-white dark:bg-[#0e0e1a] sm:rounded-3xl border border-gray-200 dark:border-[#1c1c2e] shadow-2xl overflow-hidden">
 
         {/* Success header */}
-        <div className="px-5 py-5 bg-gradient-to-r from-emerald-950/60 to-[#0e0e1a] border-b border-[#1a1a2e]">
+        <div className="px-5 py-5 bg-gradient-to-r from-emerald-50 to-white dark:from-emerald-950/60 dark:to-[#0e0e1a] border-b border-gray-200 dark:border-[#1a1a2e]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
-              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+              <CheckCircle2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
             </div>
             <div>
-              <h2 className="text-white font-black text-base">¡Producto publicado!</h2>
+              <h2 className="text-gray-900 dark:text-white font-black text-base">¡Producto publicado!</h2>
               <p className="text-gray-500 text-xs mt-0.5 truncate max-w-xs">{producto.nombre}</p>
             </div>
           </div>
@@ -1261,7 +1264,7 @@ function ModalCompartirPost({
         <div className="p-5 space-y-4">
           {/* Pregunta compartir */}
           <div>
-            <p className="text-white font-bold text-sm">¿Compartir en redes sociales ahora?</p>
+            <p className="text-gray-900 dark:text-white font-bold text-sm">¿Compartir en redes sociales ahora?</p>
             <p className="text-gray-500 text-xs mt-0.5">Llega a más clientes compartiendo tu producto.</p>
           </div>
 
@@ -1276,15 +1279,15 @@ function ModalCompartirPost({
               return (
                 <button key={red} onClick={() => setSelec(p => { const s = new Set(p); s.has(red) ? s.delete(red) : s.add(red); return s; })}
                   className={`relative flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all text-left
-                    ${activa ? `border-[${cfg.color}]/40 bg-[${cfg.color}]/8` : "border-[#1a1a2e] bg-[#0f0f1e]"}
-                    ${est?.estado === "ok" ? "border-emerald-500/40 bg-emerald-950/20" : ""}`}>
-                  <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 transition ${activa ? "border-white bg-white" : "border-gray-600"}`}
+                    ${activa ? `border-[${cfg.color}]/40 bg-[${cfg.color}]/8` : "border-gray-200 bg-gray-50 dark:border-[#1a1a2e] dark:bg-[#0f0f1e]"}
+                    ${est?.estado === "ok" ? "border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/20" : ""}`}>
+                  <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 transition ${activa ? "border-white bg-white" : "border-gray-300 dark:border-gray-600"}`}
                     style={activa ? { boxShadow: `0 0 0 2px ${cfg.color}` } : {}} />
                   <div>
-                    <p className="text-white text-xs font-bold">{cfg.nombre}</p>
-                    <p className="text-gray-600 text-[10px]">{cx?.conectada ? "Auto" : "Manual"}</p>
+                    <p className="text-gray-900 dark:text-white text-xs font-bold">{cfg.nombre}</p>
+                    <p className="text-gray-400 dark:text-gray-600 text-[10px]">{cx?.conectada ? "Auto" : "Manual"}</p>
                   </div>
-                  {est?.estado === "ok" && <CheckCircle2 className="w-4 h-4 text-emerald-400 absolute right-2 top-2" />}
+                  {est?.estado === "ok" && <CheckCircle2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400 absolute right-2 top-2" />}
                   {est?.estado === "publicando" && <Loader2 className="w-4 h-4 text-orange-400 animate-spin absolute right-2 top-2" />}
                 </button>
               );
@@ -1296,12 +1299,12 @@ function ModalCompartirPost({
             <div className="flex justify-between mb-1.5">
               <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Texto</p>
               <button onClick={() => { navigator.clipboard.writeText(texto); setCopiado(true); setTimeout(() => setCopiado(false), 2000); }}
-                className="flex items-center gap-1 text-[10px] text-orange-400 hover:text-orange-300 transition font-semibold">
+                className="flex items-center gap-1 text-[10px] text-orange-500 dark:text-orange-400 hover:text-orange-600 dark:hover:text-orange-300 transition font-semibold">
                 {copiado ? <><Check className="w-3 h-3" />Copiado</> : <><Copy className="w-3 h-3" />Copiar</>}
               </button>
             </div>
             <textarea value={texto} onChange={e => setTexto(e.target.value)} rows={5}
-              className="w-full px-3 py-2.5 rounded-xl bg-[#0f0f1e] border border-[#1c1c2e] text-gray-300 text-xs leading-relaxed outline-none focus:border-orange-500/40 transition resize-none font-mono" />
+              className="w-full px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 dark:bg-[#0f0f1e] dark:border-[#1c1c2e] dark:text-gray-300 text-xs leading-relaxed outline-none focus:border-orange-500/40 transition resize-none font-mono" />
           </div>
 
           {/* Links post-publicación */}
@@ -1309,9 +1312,9 @@ function ModalCompartirPost({
             <div className="space-y-1.5">
               {Object.values(estados).filter(e => e.estado === "ok" && e.post_url).map((e, i) => (
                 <a key={i} href={e.post_url} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-950/30 border border-emerald-500/20 hover:border-emerald-500/40 transition">
-                  <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-emerald-300 text-xs font-semibold flex-1">Ver publicación</span>
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 hover:border-emerald-400 dark:bg-emerald-950/30 dark:border-emerald-500/20 dark:hover:border-emerald-500/40 transition">
+                  <ExternalLink className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
+                  <span className="text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex-1">Ver publicación</span>
                 </a>
               ))}
             </div>
@@ -1320,7 +1323,7 @@ function ModalCompartirPost({
           {/* Botones */}
           <div className="flex gap-2 pt-1">
             <button onClick={onClose}
-              className="flex-1 py-3 rounded-2xl bg-[#0f0f1e] hover:bg-[#111124] text-gray-400 font-bold text-sm transition">
+              className="flex-1 py-3 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-600 dark:bg-[#0f0f1e] dark:hover:bg-[#111124] dark:text-gray-400 font-bold text-sm transition">
               {todoOk ? "Ir a mis productos" : "Ahora no"}
             </button>
             {!todoOk && (
