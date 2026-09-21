@@ -7,11 +7,17 @@ import {
   ArrowLeft, Send, Upload, Receipt, Loader2,
   Download, Lock, Unlock, CheckCircle2, Package,
   MessageCircle, AlertCircle, ExternalLink, Zap,
-  Banknote, CreditCard, Clock, X
+  Banknote, CreditCard, Clock, X, MapPin
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const WS_URL  = API_URL.replace("http", "ws");
+
+// ── Ubicación fija de la oficina de Mercado Fénix (entrega "oficina_fenix") ──
+// Coordenadas resueltas una sola vez a partir del enlace corto de Maps.
+const OFICINA_FENIX_MAPS_URL = "https://maps.app.goo.gl/P3jwAp6FNPnxaW2g8";
+const OFICINA_FENIX_LAT = 14.0393003;
+const OFICINA_FENIX_LNG = -86.5661934;
 
 // ─── TIPOS ────────────────────────────────────────────────────────────────────
 interface Mensaje {
@@ -24,14 +30,23 @@ interface Mensaje {
   enviado_en: string;
 }
 
+interface VendedorInfo {
+  nombre_tienda: string;
+  google_maps_url: string | null;
+  google_maps_lat?: number | null;
+  google_maps_lng?: number | null;
+}
+
 interface PedidoInfo {
   id: number;
   estado: string;
+  tipo_entrega: string;
   metodo_pago: string;
   total: number;
   es_digital: boolean;
   descarga_habilitada: boolean;
   descarga_token: string | null;
+  vendedor?: VendedorInfo | null;
   items: { nombre_producto: string; cantidad: number; precio_unitario: number }[];
 }
 
@@ -57,6 +72,13 @@ function formatFecha(iso: string) {
   return new Date(iso).toLocaleDateString("es-HN", {
     day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
   });
+}
+
+// Src del iframe embebido de Google Maps a partir de coordenadas — no requiere
+// API key (es el mismo formato "output=embed" que usa Google para enlaces
+// compartidos de solo lectura).
+function mapsEmbedSrc(lat: number, lng: number, zoom = 16) {
+  return `https://www.google.com/maps?q=${lat},${lng}&z=${zoom}&output=embed`;
 }
 
 const ESTADO_LABEL: Record<string, { label: string; color: string; bg: string }> = {
@@ -136,6 +158,59 @@ function BannerPendientePago({ pedido }: { pedido: PedidoInfo }) {
             Una vez que el vendedor verifique tu pago, recibirás el enlace de descarga aquí en el chat.
           </p>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── BANNER DE UBICACIÓN CON MAPA INCRUSTADO ──────────────────────────────────
+// (recoger en tienda / oficina Mercado Fénix)
+function BannerUbicacion({ tipo, nombreTienda, mapsUrl, lat, lng }: {
+  tipo: "tienda" | "oficina_fenix";
+  nombreTienda?: string | null;
+  mapsUrl: string;
+  lat?: number | null;
+  lng?: number | null;
+}) {
+  const esTienda    = tipo === "tienda";
+  const tieneCoords = typeof lat === "number" && typeof lng === "number";
+
+  return (
+    <div className="mx-4 mb-3 rounded-2xl overflow-hidden border border-blue-200 shadow-lg">
+      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 px-4 py-3 flex items-center gap-2">
+        <MapPin className="w-4 h-4 text-white flex-shrink-0" />
+        <p className="text-white font-black text-sm">
+          {esTienda ? "Ubicación para recoger tu pedido" : "Ubicación de la oficina Mercado Fénix"}
+        </p>
+      </div>
+
+      {/* Mapa incrustado — solo si logramos resolver coordenadas */}
+      {tieneCoords && (
+        <iframe
+          src={mapsEmbedSrc(lat as number, lng as number)}
+          className="w-full h-44 border-0 block"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          title={esTienda ? "Ubicación de la tienda" : "Ubicación de la oficina Mercado Fénix"}
+        />
+      )}
+
+      <div className="bg-blue-50 px-4 py-3 space-y-2.5">
+        <p className="text-xs text-blue-700 leading-relaxed">
+          {esTienda
+            ? <>Recoge tu pedido directamente en <span className="font-bold">{nombreTienda || "la tienda del vendedor"}</span>.</>
+            : "Tu pedido llegará a nuestra oficina. Pásalo a recoger cuando te notifiquemos que está listo."}
+        </p>
+        <a
+          href={mapsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 w-full py-3 bg-white hover:bg-blue-100 text-blue-700 font-bold rounded-xl text-sm border border-blue-200 transition-all active:scale-[0.98]"
+        >
+          <MapPin className="w-4 h-4" />
+          {tieneCoords ? "Abrir en Google Maps" : "Ver ubicación en Google Maps"}
+          <ExternalLink className="w-3.5 h-3.5 ml-auto opacity-70" />
+        </a>
       </div>
     </div>
   );
@@ -374,6 +449,10 @@ export default function ChatPedidoDigitalPage() {
   const descargaLista   = pedido?.descarga_habilitada && pedido?.descarga_token;
   const estadoCfg       = ESTADO_LABEL[pedido?.estado || "pendiente"] || ESTADO_LABEL.pendiente;
 
+  // Ubicación a mostrar según el tipo de entrega elegido en el checkout
+  const mostrarUbicacionTienda  = pedido?.tipo_entrega === "tienda" && !!pedido?.vendedor?.google_maps_url;
+  const mostrarUbicacionOficina = pedido?.tipo_entrega === "oficina_fenix";
+
   return (
     <div className="flex flex-col h-screen bg-gray-50 max-w-2xl mx-auto">
 
@@ -435,6 +514,29 @@ export default function ChatPedidoDigitalPage() {
           </div>
         )}
       </div>
+
+      {/* ── BANNER UBICACIÓN — recoger en tienda / oficina Mercado Fénix ─────── */}
+      {mostrarUbicacionTienda && (
+        <div className="flex-shrink-0 pt-3">
+          <BannerUbicacion
+            tipo="tienda"
+            nombreTienda={pedido?.vendedor?.nombre_tienda}
+            mapsUrl={pedido!.vendedor!.google_maps_url as string}
+            lat={pedido?.vendedor?.google_maps_lat}
+            lng={pedido?.vendedor?.google_maps_lng}
+          />
+        </div>
+      )}
+      {mostrarUbicacionOficina && (
+        <div className="flex-shrink-0 pt-3">
+          <BannerUbicacion
+            tipo="oficina_fenix"
+            mapsUrl={OFICINA_FENIX_MAPS_URL}
+            lat={OFICINA_FENIX_LAT}
+            lng={OFICINA_FENIX_LNG}
+          />
+        </div>
+      )}
 
       {/* ── BANNER DESCARGA LISTA ────────────────────────────────────────────── */}
       {descargaLista && pedido?.descarga_token && (
