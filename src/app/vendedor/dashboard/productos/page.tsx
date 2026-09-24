@@ -18,8 +18,8 @@ function authHeaders() { const t = getToken(); return t ? { Authorization: `Bear
 
 // ── Optimización imágenes ─────────────────────────────────────────────────────
 // ── Procesado de imágenes: quitar fondo (IA local) → lienzo → WebP ────────────
-const FONDO_BLANCO = "#FFFFFF";
-const FONDO_SUAVE  = "#D9E6F2"; // lienzo para productos blancos (ajusta el tono si quieres)
+const FONDO_BLANCO = "transparent"; // lienzo para productos de color (ajusta el tono si quieres)
+const FONDO_SUAVE  = "transparent"; // lienzo para productos blancos (ajusta el tono si quieres)
 
 async function optimizarImagen(file: File, maxW = 1200, quality = 0.82, fondo?: string): Promise<File> {
   return new Promise(resolve => {
