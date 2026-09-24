@@ -33,7 +33,7 @@ function buildTextoCompartir(producto: any, vendedor: any, url: string) {
 }
 
 // ── Optimización de imágenes → WebP ──────────────────────────────────────────
-async function optimizarImagen(file: File, maxW = 1200, quality = 0.82): Promise<File> {
+async function optimizarImagen(file: File, maxW = 1200, quality = 0.82, fondo?: string): Promise<File> {
   return new Promise(resolve => {
     const reader = new FileReader();
     reader.onload = e => {
@@ -43,10 +43,11 @@ async function optimizarImagen(file: File, maxW = 1200, quality = 0.82): Promise
         let { width, height } = img;
         if (width > maxW) { height = Math.round(height * maxW / width); width = maxW; }
         canvas.width = width; canvas.height = height;
-        // No se rellena el canvas: queda transparente por defecto, así que si
-        // la imagen ya no tiene fondo (quitarFondoImagen) esa transparencia
-        // se conserva al convertir a WebP (soporta canal alfa).
-        canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+        const ctx = canvas.getContext("2d")!;
+        // Si hay color de fondo, se pinta el lienzo antes de dibujar el producto.
+        // Sin color, el canvas queda transparente (comportamiento anterior).
+        if (fondo) { ctx.fillStyle = fondo; ctx.fillRect(0, 0, width, height); }
+        ctx.drawImage(img, 0, 0, width, height);
         canvas.toBlob(blob => {
           if (!blob) { resolve(file); return; }
           resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".webp"), { type: "image/webp" }));
@@ -85,11 +86,56 @@ async function quitarFondoImagen(file: File, onProgress?: (pct: number) => void)
   return new File([blob], `${nombreBase}-sin-fondo.png`, { type: "image/png" });
 }
 
+// ── Color de fondo automático tras quitar el fondo ───────────────────────────
+// Producto blanco → fondo suave que se note; cualquier otro color → blanco.
+const FONDO_BLANCO = "#FFFFFF";
+const FONDO_SUAVE  = "#D9E6F2"; // ← ajusta este tono si quieres más o menos contraste
+
+async function elegirColorFondo(file: File): Promise<string> {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = rej;
+      i.src = url;
+    });
+
+    // Reducimos a ~96px para que el análisis sea rápido
+    const escala = Math.min(1, 96 / Math.max(img.width, img.height));
+    const w = Math.max(1, Math.round(img.width * escala));
+    const h = Math.max(1, Math.round(img.height * escala));
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    const ctx = c.getContext("2d", { willReadFrequently: true })!;
+    ctx.drawImage(img, 0, 0, w, h);
+    const d = ctx.getImageData(0, 0, w, h).data;
+
+    let total = 0, claros = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 200) continue; // ignorar píxeles transparentes (el fondo quitado)
+      total++;
+      const r = d[i], g = d[i + 1], b = d[i + 2];
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      // "Blanco": muy claro y casi sin saturación (tolera sombras suaves)
+      if (min > 185 && max - min < 35) claros++;
+    }
+
+    if (total === 0) return FONDO_BLANCO;
+    return claros / total >= 0.5 ? FONDO_SUAVE : FONDO_BLANCO;
+  } catch {
+    return FONDO_BLANCO;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 interface FotoItem {
   id: string; file: File; raw: File; preview: string;
   originalKB: number; optimizedKB: number; optimizing: boolean;
   sinFondo: boolean; procesandoFondo: boolean; fondoProgreso?: number;
+  colorFondo?: string;   // ← nuevo: color del lienzo aplicado
 }
 
 // ── Catálogo de categorías con config por tipo ─────────────────────────────
@@ -299,42 +345,45 @@ export default function NuevoProducto() {
 
   // ── Pipeline de una foto: (opcional) quitar fondo con IA → optimizar a WebP ─
   const procesarUnaFoto = async (id: string, rawFile: File, quitarFondo: boolean) => {
-    setFotos(prev => prev.map(f => f.id === id
-      ? { ...f, optimizing: true, procesandoFondo: quitarFondo, fondoProgreso: undefined } : f));
+  setFotos(prev => prev.map(f => f.id === id
+    ? { ...f, optimizing: true, procesandoFondo: quitarFondo, fondoProgreso: undefined } : f));
 
-    let base = rawFile;
-    let fondoQuitadoOk = false;
+  let base = rawFile;
+  let fondoQuitadoOk = false;
+  let colorFondo: string | undefined;
 
-    if (quitarFondo) {
-      try {
-        base = await quitarFondoImagen(rawFile, pct => {
-          setFotos(prev => prev.map(f => f.id === id ? { ...f, fondoProgreso: pct } : f));
-        });
-        fondoQuitadoOk = true;
-      } catch (err: any) {
-        console.error("Error quitando fondo:", err);
-        toast_(`No se pudo quitar el fondo: ${err?.message || String(err)}`, "err");
-        base = rawFile;
-      }
-    }
-
+  if (quitarFondo) {
     try {
-      const opt = await optimizarImagen(base);
-      const pv  = URL.createObjectURL(opt);
-      setFotos(prev => prev.map(f => {
-        if (f.id !== id) return f;
-        URL.revokeObjectURL(f.preview);
-        return {
-          ...f, file: opt, preview: pv, optimizedKB: Math.round(opt.size / 1024),
-          optimizing: false, procesandoFondo: false, fondoProgreso: undefined,
-          sinFondo: fondoQuitadoOk,
-        };
-      }));
-    } catch {
-      setFotos(prev => prev.map(f => f.id === id
-        ? { ...f, optimizing: false, procesandoFondo: false, fondoProgreso: undefined, optimizedKB: f.originalKB } : f));
+      base = await quitarFondoImagen(rawFile, pct => {
+        setFotos(prev => prev.map(f => f.id === id ? { ...f, fondoProgreso: pct } : f));
+      });
+      fondoQuitadoOk = true;
+    } catch (err: any) {
+      console.error("Error quitando fondo:", err);
+      toast_(`No se pudo quitar el fondo: ${err?.message || String(err)}`, "err");
+      base = rawFile;
     }
-  };
+    // Solo se cambia el lienzo si el fondo se quitó bien
+    if (fondoQuitadoOk) colorFondo = await elegirColorFondo(base);
+  }
+
+  try {
+    const opt = await optimizarImagen(base, 1200, 0.82, colorFondo);
+    const pv  = URL.createObjectURL(opt);
+    setFotos(prev => prev.map(f => {
+      if (f.id !== id) return f;
+      URL.revokeObjectURL(f.preview);
+      return {
+        ...f, file: opt, preview: pv, optimizedKB: Math.round(opt.size / 1024),
+        optimizing: false, procesandoFondo: false, fondoProgreso: undefined,
+        sinFondo: fondoQuitadoOk, colorFondo,
+      };
+    }));
+  } catch {
+    setFotos(prev => prev.map(f => f.id === id
+      ? { ...f, optimizing: false, procesandoFondo: false, fondoProgreso: undefined, optimizedKB: f.originalKB } : f));
+  }
+};
 
   // ── Procesado de imágenes nuevas ─────────────────────────────────────────
   // Cada foto pasa automáticamente por: quitar fondo con IA → optimizar a WebP.
@@ -1044,10 +1093,6 @@ export default function NuevoProducto() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-bold text-gray-900 dark:text-white">El fondo se quita automáticamente</p>
-                  <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
-                    Cada foto pasa por IA que corre en tu propio navegador — no se sube a ningún servicio externo.
-                    La primera foto tarda un poco más porque descarga el modelo (luego queda en caché).
-                  </p>
                   <p className="text-xs text-violet-600 dark:text-violet-400 font-semibold mt-2 leading-relaxed">
                     📸 Consejo profesional: toma las fotos sobre un manto o tela de color sólido —
                     verde, azul o negro — para que la IA recorte el fondo con más precisión.
