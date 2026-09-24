@@ -9,7 +9,7 @@ import {
   Music, Video, Archive, Palette, Shield, Star, Tag, Hash,
   Ruler, Weight, Camera, Globe, Clock, Users, Layers,
   Share2, Wifi, WifiOff, Copy, Check, ExternalLink, Radio,
-  Wand2, Undo2
+  Wand2
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -62,14 +62,25 @@ async function optimizarImagen(file: File, maxW = 1200, quality = 0.82): Promise
 // No se envía la foto a ningún servidor externo: el modelo se descarga una vez
 // (se cachea en el navegador) y todo el procesamiento corre localmente.
 // Requiere: npm install @imgly/background-removal
+//
+// IMPORTANT: en apps con webpack/Next.js la librería casi siempre necesita que
+// le indiquemos "publicPath" explícito — si no, no encuentra sus archivos de
+// modelo (.wasm + datos), falla en silencio y la foto queda con el fondo
+// original. Verifica la versión instalada con `npm ls @imgly/background-removal`
+// y ajusta el número de versión en la URL de abajo si no coincide.
 async function quitarFondoImagen(file: File, onProgress?: (pct: number) => void): Promise<File> {
+  console.log("[quitarFondo] Iniciando para:", file.name, file.size, "bytes");
   const { removeBackground } = await import("@imgly/background-removal");
+  console.log("[quitarFondo] Librería cargada, procesando...");
   const blob = await removeBackground(file, {
+    publicPath: "https://staticimgly.com/@imgly/background-removal-data/1.7.0/dist/",
     output: { format: "image/png", quality: 0.92 },
-    progress: (_clave: string, actual: number, total: number) => {
+    progress: (clave: string, actual: number, total: number) => {
+      console.log("[quitarFondo] progreso:", clave, actual, "/", total);
       if (onProgress && total > 0) onProgress(Math.round((actual / total) * 100));
     },
   } as any);
+  console.log("[quitarFondo] Listo:", blob.size, "bytes,", blob.type);
   const nombreBase = file.name.replace(/\.[^.]+$/, "");
   return new File([blob], `${nombreBase}-sin-fondo.png`, { type: "image/png" });
 }
@@ -258,10 +269,9 @@ export default function NuevoProducto() {
 
   // ── Paso 3: Imágenes / archivo ─────────────────────────────────────────
   const [fotos, setFotos] = useState<FotoItem[]>([]);
-  const [autoQuitarFondo, setAutoQuitarFondo] = useState(false);
   const { h: dragH, hov: dragHov } = useDragSort(fotos, setFotos);
 
-  const toast_ = (msg: string, tipo: "ok" | "err") => { setToast({ msg, tipo }); setTimeout(() => setToast(null), 4000); };
+  const toast_ = (msg: string, tipo: "ok" | "err") => { setToast({ msg, tipo }); setTimeout(() => setToast(null), tipo === "err" ? 8000 : 4000); };
 
   // ── Sugerencias debounce ───────────────────────────────────────────────
   useEffect(() => {
@@ -301,9 +311,9 @@ export default function NuevoProducto() {
           setFotos(prev => prev.map(f => f.id === id ? { ...f, fondoProgreso: pct } : f));
         });
         fondoQuitadoOk = true;
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error quitando fondo:", err);
-        toast_("No se pudo quitar el fondo en esta foto (navegador no compatible o sin conexión)", "err");
+        toast_(`No se pudo quitar el fondo: ${err?.message || String(err)}`, "err");
         base = rawFile;
       }
     }
@@ -326,13 +336,9 @@ export default function NuevoProducto() {
     }
   };
 
-  // ── Alterna quitar/restaurar fondo en una foto ya subida ────────────────
-  const alternarFondoFoto = (foto: FotoItem) => {
-    if (foto.optimizing || foto.procesandoFondo) return;
-    procesarUnaFoto(foto.id, foto.raw, !foto.sinFondo);
-  };
-
   // ── Procesado de imágenes nuevas ─────────────────────────────────────────
+  // Cada foto pasa automáticamente por: quitar fondo con IA → optimizar a WebP.
+  // No requiere ningún interruptor ni botón — igual que la optimización.
   const procesarImagenes = async (files: File[]) => {
     const nuevas: FotoItem[] = files.map(f => ({
       id: Math.random().toString(36).slice(2), file: f, raw: f, preview: URL.createObjectURL(f),
@@ -341,7 +347,7 @@ export default function NuevoProducto() {
     }));
     setFotos(prev => [...prev, ...nuevas]);
     for (const item of nuevas) {
-      await procesarUnaFoto(item.id, item.raw, autoQuitarFondo);
+      await procesarUnaFoto(item.id, item.raw, true);
     }
   };
   useEffect(() => () => { fotos.forEach(f => URL.revokeObjectURL(f.preview)); }, []);
@@ -457,12 +463,12 @@ export default function NuevoProducto() {
 
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-[999] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl border text-sm font-semibold pointer-events-none
+        <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-[999] flex items-start gap-3 px-5 py-3 rounded-2xl shadow-2xl border text-sm font-semibold pointer-events-none max-w-[92vw] sm:max-w-md break-words
           ${toast.tipo === "ok"
             ? "bg-emerald-50 border-emerald-300 text-emerald-700 dark:bg-[#0a1f14] dark:border-emerald-500/40 dark:text-emerald-200"
             : "bg-red-50 border-red-300 text-red-700 dark:bg-[#1f0a0a] dark:border-red-500/40 dark:text-red-200"}`}>
-          {toast.tipo === "ok" ? <CheckCircle2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400 flex-shrink-0" /> : <AlertTriangle className="w-4 h-4 text-red-500 dark:text-red-400 flex-shrink-0" />}
-          {toast.msg}
+          {toast.tipo === "ok" ? <CheckCircle2 className="w-4 h-4 mt-0.5 text-emerald-500 dark:text-emerald-400 flex-shrink-0" /> : <AlertTriangle className="w-4 h-4 mt-0.5 text-red-500 dark:text-red-400 flex-shrink-0" />}
+          <span>{toast.msg}</span>
         </div>
       )}
 
@@ -1031,21 +1037,23 @@ export default function NuevoProducto() {
 
             {tipo === "fisico" ? (<>
 
-              {/* ── Quitar fondo con IA (interruptor global) ─────────────── */}
-              <div className="flex items-start justify-between gap-3 p-4 rounded-2xl bg-violet-50 border border-violet-200 dark:bg-violet-950/20 dark:border-violet-500/20">
-                <div className="flex items-start gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-violet-500/15 flex items-center justify-center flex-shrink-0">
-                    <Wand2 className="w-4.5 h-4.5 text-violet-600 dark:text-violet-400" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-gray-900 dark:text-white">Quitar fondo automáticamente</p>
-                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
-                      IA que corre en tu propio navegador — tus fotos no se suben a ningún servicio externo.
-                      La primera vez tarda un poco más porque descarga el modelo.
-                    </p>
-                  </div>
+              {/* ── Aviso: quitar fondo con IA es automático ─────────────── */}
+              <div className="flex items-start gap-3 p-4 rounded-2xl bg-violet-50 border border-violet-200 dark:bg-violet-950/20 dark:border-violet-500/20">
+                <div className="w-9 h-9 rounded-xl bg-violet-500/15 flex items-center justify-center flex-shrink-0">
+                  <Wand2 className="w-4.5 h-4.5 text-violet-600 dark:text-violet-400" />
                 </div>
-                <Toggle value={autoQuitarFondo} onChange={setAutoQuitarFondo} label="" />
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">El fondo se quita automáticamente</p>
+                  <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                    Cada foto pasa por IA que corre en tu propio navegador — no se sube a ningún servicio externo.
+                    La primera foto tarda un poco más porque descarga el modelo (luego queda en caché).
+                  </p>
+                  <p className="text-xs text-violet-600 dark:text-violet-400 font-semibold mt-2 leading-relaxed">
+                    📸 Consejo profesional: toma las fotos sobre un manto o tela de color sólido —
+                    verde, azul o negro — para que la IA recorte el fondo con más precisión.
+                    Evita usar un manto del mismo color que el producto.
+                  </p>
+                </div>
               </div>
 
               {/* Drop zone */}
@@ -1127,20 +1135,11 @@ export default function NuevoProducto() {
                           )}
                         </div>
 
-                        {/* Botones: eliminar + quitar/restaurar fondo */}
-                        <div className="absolute top-1.5 right-1.5 flex flex-col gap-1">
-                          <button onClick={() => { URL.revokeObjectURL(foto.preview); setFotos(p => p.filter(x => x.id !== foto.id)); }}
-                            className="bg-black/60 hover:bg-red-600 p-1.5 rounded-lg transition">
-                            <X className="w-3.5 h-3.5 text-white" />
-                          </button>
-                          {!foto.optimizing && (
-                            <button onClick={(e) => { e.stopPropagation(); alternarFondoFoto(foto); }}
-                              title={foto.sinFondo ? "Restaurar fondo original" : "Quitar fondo con IA"}
-                              className="bg-black/60 hover:bg-violet-600 p-1.5 rounded-lg transition">
-                              {foto.sinFondo ? <Undo2 className="w-3.5 h-3.5 text-white" /> : <Wand2 className="w-3.5 h-3.5 text-white" />}
-                            </button>
-                          )}
-                        </div>
+                        {/* Eliminar foto */}
+                        <button onClick={() => { URL.revokeObjectURL(foto.preview); setFotos(p => p.filter(x => x.id !== foto.id)); }}
+                          className="absolute top-1.5 right-1.5 bg-black/60 hover:bg-red-600 p-1.5 rounded-lg transition">
+                          <X className="w-3.5 h-3.5 text-white" />
+                        </button>
 
                         <div className="absolute bottom-1.5 right-1.5 bg-black/40 p-0.5 rounded pointer-events-none">
                           <GripVertical className="w-2.5 h-2.5 text-white/40" />
