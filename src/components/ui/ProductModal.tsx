@@ -1179,7 +1179,7 @@ export default function ProductModal({ producto, isOpen, onClose }: any) {
       {/* ── Lightbox ────────────────────────────────────────────────────── */}
       {lightboxOpen && imgs.length > 0 && (
         <div
-          className="fixed inset-0 bg-transparent z-[100] flex items-center justify-center"
+          className="fixed inset-0 bg-white z-[100] flex items-center justify-center"
           onClick={() => setLightboxOpen(false)}
         >
           <button
