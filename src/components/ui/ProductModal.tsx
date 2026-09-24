@@ -1183,7 +1183,7 @@ export default function ProductModal({ producto, isOpen, onClose }: any) {
           onClick={() => setLightboxOpen(false)}
         >
           <button
-            className="absolute top-5 right-5 text-white p-3 rounded-full bg-white/10 hover:bg-white/20 transition z-10"
+            className="absolute top-5 right-5 text-orange-500 p-3 rounded-full bg-green/10 hover:bg-orange/20 transition z-10"
             onClick={() => setLightboxOpen(false)}
           >
             <X className="w-6 h-6" />
