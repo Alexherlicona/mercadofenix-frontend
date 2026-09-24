@@ -1193,16 +1193,16 @@ export default function ProductModal({ producto, isOpen, onClose }: any) {
               draggable={false} onContextMenu={e => esDigital && e.preventDefault()} />
             {imgs.length > 1 && (
               <>
-                <button onClick={prevImg} className="absolute left-2 top-1/2 -translate-y-1/2 p-3.5 bg-white/15 backdrop-blur-sm rounded-full hover:bg-white/30 transition">
-                  <ChevronLeft className="w-6 h-6 text-white" />
+                <button onClick={prevImg} className="absolute left-2 top-1/2 -translate-y-1/2 p-3.5 bg-gray-100 backdrop-blur-sm rounded-full hover:bg-white/30 transition">
+                  <ChevronLeft className="w-6 h-6 text-orange-500" />
                 </button>
-                <button onClick={nextImg} className="absolute right-2 top-1/2 -translate-y-1/2 p-3.5 bg-white/15 backdrop-blur-sm rounded-full hover:bg-white/30 transition">
-                  <ChevronRight className="w-6 h-6 text-white" />
+                <button onClick={nextImg} className="absolute right-2 top-1/2 -translate-y-1/2 p-3.5 bg-gray-100 backdrop-blur-sm rounded-full hover:bg-white/30 transition">
+                  <ChevronRight className="w-6 h-6 text-orange-500" />
                 </button>
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
                   {imgs.map((_: string, i: number) => (
                     <button key={i} onClick={() => setImgIndex(i)}
-                      className={`w-2 h-2 rounded-full transition-all ${i === imgIndex ? "bg-white scale-125" : "bg-white/40 hover:bg-white/70"}`} />
+                      className={`w-2 h-2 rounded-full transition-all ${i === imgIndex ? "bg-gray scale-125" : "bg-gray-300 hover:bg-white/70"}`} />
                   ))}
                 </div>
               </>
