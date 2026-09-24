@@ -88,8 +88,8 @@ async function quitarFondoImagen(file: File, onProgress?: (pct: number) => void)
 
 // ── Color de fondo automático tras quitar el fondo ───────────────────────────
 // Producto blanco → fondo suave que se note; cualquier otro color → blanco.
-const FONDO_BLANCO = "#FFFFFF";
-const FONDO_SUAVE  = "#D9E6F2"; // ← ajusta este tono si quieres más o menos contraste
+const FONDO_BLANCO = "transparent"; // ← ajusta este tono si quieres más o menos contraste
+const FONDO_SUAVE  = "transparent"; // ← ajusta este tono si quieres más o menos contraste
 
 async function elegirColorFondo(file: File): Promise<string> {
   const url = URL.createObjectURL(file);
