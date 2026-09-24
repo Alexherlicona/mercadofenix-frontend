@@ -7,17 +7,21 @@ import {
   Plus, ImageIcon, AlertTriangle, CheckCircle2, Loader2,
   GripVertical, Zap, Upload, Tag, DollarSign,
   Shield, ChevronDown, FileText, Share2, Wifi, WifiOff,
-  ExternalLink, Copy, Check, Globe, Radio
+  ExternalLink, Copy, Check, Globe, Radio, Wand2
 } from "lucide-react";
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 const PLATAFORMA_URL = "https://mercadofenix.vercel.app/"; // ← cambia a tu dominio
 
 function getToken() { return typeof window !== "undefined" ? localStorage.getItem("vendedor_token") : null; }
 function authHeaders() { const t = getToken(); return t ? { Authorization: `Bearer ${t}` } : {}; }
 
+
 // ── Optimización imágenes ─────────────────────────────────────────────────────
-async function optimizarImagen(file: File, maxW = 1200, quality = 0.82): Promise<File> {
+// ── Procesado de imágenes: quitar fondo (IA local) → lienzo → WebP ────────────
+const FONDO_BLANCO = "#FFFFFF";
+const FONDO_SUAVE  = "#D9E6F2"; // lienzo para productos blancos (ajusta el tono si quieres)
+
+async function optimizarImagen(file: File, maxW = 1200, quality = 0.82, fondo?: string): Promise<File> {
   return new Promise(resolve => {
     const reader = new FileReader();
     reader.onload = e => {
@@ -27,7 +31,9 @@ async function optimizarImagen(file: File, maxW = 1200, quality = 0.82): Promise
         let { width, height } = img;
         if (width > maxW) { height = Math.round(height * maxW / width); width = maxW; }
         canvas.width = width; canvas.height = height;
-        canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+        const ctx = canvas.getContext("2d")!;
+        if (fondo) { ctx.fillStyle = fondo; ctx.fillRect(0, 0, width, height); }
+        ctx.drawImage(img, 0, 0, width, height);
         canvas.toBlob(blob => {
           if (!blob) { resolve(file); return; }
           resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".webp"), { type: "image/webp" }));
@@ -37,6 +43,57 @@ async function optimizarImagen(file: File, maxW = 1200, quality = 0.82): Promise
     };
     reader.readAsDataURL(file);
   });
+}
+
+// Requiere: npm install @imgly/background-removal
+// Verifica la versión con `npm ls @imgly/background-removal` y ajusta el número en publicPath si no coincide.
+async function quitarFondoImagen(file: File, onProgress?: (pct: number) => void): Promise<File> {
+  const { removeBackground } = await import("@imgly/background-removal");
+  const blob = await removeBackground(file, {
+    publicPath: "https://staticimgly.com/@imgly/background-removal-data/1.7.0/dist/",
+    output: { format: "image/png", quality: 0.92 },
+    progress: (_clave: string, actual: number, total: number) => {
+      if (onProgress && total > 0) onProgress(Math.round((actual / total) * 100));
+    },
+  } as any);
+  const nombreBase = file.name.replace(/\.[^.]+$/, "");
+  return new File([blob], `${nombreBase}-sin-fondo.png`, { type: "image/png" });
+}
+
+// Producto blanco (≥50% de píxeles claros y poco saturados) → lienzo suave; cualquier otro → blanco
+async function elegirColorFondo(file: File): Promise<string> {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = rej;
+      i.src = url;
+    });
+    const escala = Math.min(1, 96 / Math.max(img.width, img.height));
+    const w = Math.max(1, Math.round(img.width * escala));
+    const h = Math.max(1, Math.round(img.height * escala));
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    const ctx = c.getContext("2d", { willReadFrequently: true })!;
+    ctx.drawImage(img, 0, 0, w, h);
+    const d = ctx.getImageData(0, 0, w, h).data;
+
+    let total = 0, claros = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 200) continue; // ignorar el fondo ya quitado
+      total++;
+      const r = d[i], g = d[i + 1], b = d[i + 2];
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      if (min > 185 && max - min < 35) claros++;
+    }
+    if (total === 0) return FONDO_BLANCO;
+    return claros / total >= 0.5 ? FONDO_SUAVE : FONDO_BLANCO;
+  } catch {
+    return FONDO_BLANCO;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 // ── Helpers de URL ────────────────────────────────────────────────────────────
@@ -55,7 +112,12 @@ function buildTexto(producto: any, vendedor: any, url: string) {
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 interface FotoExistente { id: number; url: string; orden: number; }
-interface FotoNueva { uid: string; file: File; preview: string; originalKB: number; optimizedKB: number; optimizing: boolean; }
+interface FotoNueva {
+  uid: string; file: File; raw: File; preview: string;
+  originalKB: number; optimizedKB: number; optimizing: boolean;
+  sinFondo: boolean; procesandoFondo: boolean; fondoProgreso?: number;
+  colorFondo?: string;
+}
 interface Producto {
   id: string; tipo: string; nombre: string; categoria: string;
   precio: number; porcentaje_descuento: number; descripcion: string;
@@ -414,7 +476,9 @@ export default function MisProductos() {
   }, [router]);
 
   useEffect(() => { cargar(); }, [cargar]);
-  useEffect(() => () => { fotasNuevas.forEach(f => URL.revokeObjectURL(f.preview)); }, [fotasNuevas]);
+  const fotasNuevasRef = useRef<FotoNueva[]>([]);
+  useEffect(() => { fotasNuevasRef.current = fotasNuevas; }, [fotasNuevas]);
+  useEffect(() => () => { fotasNuevasRef.current.forEach(f => URL.revokeObjectURL(f.preview)); }, []);
 
   const eliminar = async (id:string, nombre:string) => {
     if (!confirm(`¿Eliminar "${nombre}"?`)) return;
@@ -458,23 +522,53 @@ export default function MisProductos() {
     } catch { showToast("Error al cargar el producto", "err"); }
   };
 
-  const procesarNuevas = async (files: File[]) => {
-    const items: FotoNueva[] = files.map(f => ({
-      uid: Math.random().toString(36).slice(2), file: f,
-      preview: URL.createObjectURL(f), originalKB: Math.round(f.size/1024), optimizedKB: 0, optimizing: true,
-    }));
-    setFotasNuevas(prev => [...prev, ...items]);
-    for (const item of items) {
-      try {
-        const opt = await optimizarImagen(item.file);
-        const pv = URL.createObjectURL(opt);
-        setFotasNuevas(prev => prev.map(f => f.uid===item.uid ? {...f,file:opt,preview:pv,optimizedKB:Math.round(opt.size/1024),optimizing:false} : f));
-        URL.revokeObjectURL(item.preview);
-      } catch { setFotasNuevas(prev => prev.map(f => f.uid===item.uid ? {...f,optimizing:false,optimizedKB:f.originalKB} : f)); }
-    }
-  };
+  const procesarUnaNueva = async (item: FotoNueva) => {
+  const actualizar = (cambios: Partial<FotoNueva>) =>
+    setFotasNuevas(prev => prev.map(f => f.uid === item.uid ? { ...f, ...cambios } : f));
+
+  actualizar({ optimizing: true, procesandoFondo: true, fondoProgreso: undefined });
+
+  let base = item.raw;
+  let sinFondo = false;
+  let colorFondo: string | undefined;
+
+  try {
+    base = await quitarFondoImagen(item.raw, pct => actualizar({ fondoProgreso: pct }));
+    colorFondo = await elegirColorFondo(base);
+    sinFondo = true;
+  } catch (err: any) {
+    console.error("Error quitando fondo:", err);
+    showToast(`No se pudo quitar el fondo: ${err?.message || String(err)}`, "err");
+    base = item.raw;
+    colorFondo = undefined;
+  }
+
+  try {
+    const opt = await optimizarImagen(base, 1200, 0.82, colorFondo);
+    const pv = URL.createObjectURL(opt);
+    actualizar({
+      file: opt, preview: pv, optimizedKB: Math.round(opt.size / 1024),
+      optimizing: false, procesandoFondo: false, fondoProgreso: undefined,
+      sinFondo, colorFondo,
+    });
+    URL.revokeObjectURL(item.preview);
+  } catch {
+    actualizar({ optimizing: false, procesandoFondo: false, fondoProgreso: undefined, optimizedKB: item.originalKB });
+  }
+};
+
+const procesarNuevas = async (files: File[]) => {
+  const items: FotoNueva[] = files.map(f => ({
+    uid: Math.random().toString(36).slice(2), file: f, raw: f,
+    preview: URL.createObjectURL(f), originalKB: Math.round(f.size / 1024), optimizedKB: 0,
+    optimizing: true, sinFondo: false, procesandoFondo: false,
+  }));
+  setFotasNuevas(prev => [...prev, ...items]);
+  for (const item of items) await procesarUnaNueva(item); // una a la vez: el modelo IA es pesado
+};
 
   const campos = CAMPOS_CATEGORIA[form.categoria] || [];
+  const procesandoFotos = fotasNuevas.some(f => f.optimizing);
   const tiene  = (c: string) => campos.includes(c);
 
   const guardar = async () => {
@@ -665,7 +759,7 @@ export default function MisProductos() {
                 <h2 className="text-base font-black text-gray-900 dark:text-white truncate">{editando.nombre}</h2>
               </div>
               <div className="flex gap-2">
-                <button onClick={guardar} disabled={guardando}
+                <button onClick={guardar} disabled={guardando || procesandoFotos}
                   className="flex items-center gap-1.5 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-xl text-sm transition">
                   {guardando ? <Loader2 className="w-3.5 h-3.5 animate-spin"/> : <Save className="w-3.5 h-3.5"/>}
                   {guardando ? "Guardando..." : "Guardar"}
@@ -917,8 +1011,31 @@ export default function MisProductos() {
                             <div key={foto.uid} {...dragNueva.h(i)}
                               className={`relative aspect-square rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-800/80 cursor-grab active:cursor-grabbing select-none transition-all ${dragNueva.hov===i?"ring-2 ring-orange-500 scale-[1.04]":""}`}>
                               <img src={foto.preview} alt="" className="w-full h-full object-cover pointer-events-none"/>
-                              {foto.optimizing && <div className="absolute inset-0 bg-black/65 flex flex-col items-center justify-center gap-1 pointer-events-none"><Loader2 className="w-4 h-4 text-orange-400 animate-spin"/><span className="text-[8px] text-orange-300 font-bold">Optimizando</span></div>}
-                              {!foto.optimizing && foto.optimizedKB>0 && foto.optimizedKB<foto.originalKB && <div className="absolute bottom-1 left-1 bg-emerald-700/90 text-[8px] font-bold text-white px-1.5 py-0.5 rounded-md flex items-center gap-0.5 pointer-events-none"><Zap className="w-2 h-2"/>-{Math.round((1-foto.optimizedKB/foto.originalKB)*100)}%</div>}
+
+                              {foto.optimizing && (
+                                <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-1 pointer-events-none px-1 text-center">
+                                  <Loader2 className={`w-4 h-4 animate-spin ${foto.procesandoFondo ? "text-violet-400" : "text-orange-400"}`}/>
+                                  <span className={`text-[8px] font-bold ${foto.procesandoFondo ? "text-violet-300" : "text-orange-300"}`}>
+                                    {foto.procesandoFondo
+                                      ? (foto.fondoProgreso ? `IA ${foto.fondoProgreso}%` : "Quitando fondo...")
+                                      : "Optimizando"}
+                                  </span>
+                                </div>
+                              )}
+
+                              <div className="absolute bottom-1 left-1 flex items-center gap-1 pointer-events-none">
+                                {!foto.optimizing && foto.optimizedKB>0 && foto.optimizedKB<foto.originalKB && (
+                                  <div className="bg-emerald-700/90 text-[8px] font-bold text-white px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                                    <Zap className="w-2 h-2"/>-{Math.round((1-foto.optimizedKB/foto.originalKB)*100)}%
+                                  </div>
+                                )}
+                                {!foto.optimizing && foto.sinFondo && (
+                                  <div className="bg-violet-600/90 text-[8px] font-bold text-white px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                                    <Wand2 className="w-2 h-2"/>{foto.colorFondo === FONDO_SUAVE ? "Fondo suave" : "Fondo blanco"}
+                                  </div>
+                                )}
+                              </div>
+
                               <div className="absolute top-1 left-1 bg-emerald-700/80 text-[8px] font-black text-white px-1.5 py-0.5 rounded-md pointer-events-none">NUEVA</div>
                               <button onClick={()=>{URL.revokeObjectURL(foto.preview);setFotasNuevas(p=>p.filter(x=>x.uid!==foto.uid));}} className="absolute top-1 right-1 bg-black/60 hover:bg-red-600 p-1.5 rounded-lg transition"><X className="w-3 h-3 text-white"/></button>
                             </div>
@@ -930,7 +1047,7 @@ export default function MisProductos() {
                       <input type="file" multiple accept="image/*" className="hidden" onChange={e=>{const f=Array.from(e.target.files||[]).filter(x=>x.type.startsWith("image/"));if(f.length)procesarNuevas(f);e.target.value="";}}/>
                       <Upload className="w-4 h-4 text-gray-400 dark:text-gray-600 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition"/>
                       <span className="text-sm text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition">Agregar más fotos</span>
-                      <span className="text-xs text-gray-400 dark:text-gray-700 ml-auto">→ WebP optimizado</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-700 ml-auto">→ sin fondo + WebP</span>
                     </label>
                     {(fotosAEliminar.size>0||fotasNuevas.length>0) && (
                       <div className="px-3 py-2.5 rounded-xl bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-500/20 text-xs space-y-1">
@@ -962,9 +1079,11 @@ export default function MisProductos() {
 
             {/* Footer guardar */}
             <div className="flex-shrink-0 px-5 py-4 border-t border-gray-200 dark:border-white/[0.07] bg-gray-50 dark:bg-white/[0.02]">
-              <button onClick={guardar} disabled={guardando}
+              <button onClick={guardar} disabled={guardando || procesandoFotos}
                 className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 disabled:opacity-50 text-black font-black text-sm flex items-center justify-center gap-2 transition shadow-xl shadow-orange-900/20">
-                {guardando ? <><Loader2 className="w-4 h-4 animate-spin"/>Guardando...</> : <><Save className="w-4 h-4"/>Guardar cambios</>}
+                {guardando ? <><Loader2 className="w-4 h-4 animate-spin"/>Guardando...</>
+                : procesandoFotos ? <><Loader2 className="w-4 h-4 animate-spin"/>Procesando fotos...</>
+                : <><Save className="w-4 h-4"/>Guardar cambios</>}
               </button>
             </div>
           </div>
