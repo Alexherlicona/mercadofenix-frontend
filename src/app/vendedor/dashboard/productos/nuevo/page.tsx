@@ -8,7 +8,8 @@ import {
   AlertTriangle, Loader2, Package, FileText, Code, BookOpen,
   Music, Video, Archive, Palette, Shield, Star, Tag, Hash,
   Ruler, Weight, Camera, Globe, Clock, Users, Layers,
-  Share2, Wifi, WifiOff, Copy, Check, ExternalLink, Radio
+  Share2, Wifi, WifiOff, Copy, Check, ExternalLink, Radio,
+  Wand2, Undo2
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -42,6 +43,9 @@ async function optimizarImagen(file: File, maxW = 1200, quality = 0.82): Promise
         let { width, height } = img;
         if (width > maxW) { height = Math.round(height * maxW / width); width = maxW; }
         canvas.width = width; canvas.height = height;
+        // No se rellena el canvas: queda transparente por defecto, así que si
+        // la imagen ya no tiene fondo (quitarFondoImagen) esa transparencia
+        // se conserva al convertir a WebP (soporta canal alfa).
         canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
         canvas.toBlob(blob => {
           if (!blob) { resolve(file); return; }
@@ -54,8 +58,28 @@ async function optimizarImagen(file: File, maxW = 1200, quality = 0.82): Promise
   });
 }
 
+// ── Quitar fondo con IA (100% en el navegador, vía @imgly/background-removal) ─
+// No se envía la foto a ningún servidor externo: el modelo se descarga una vez
+// (se cachea en el navegador) y todo el procesamiento corre localmente.
+// Requiere: npm install @imgly/background-removal
+async function quitarFondoImagen(file: File, onProgress?: (pct: number) => void): Promise<File> {
+  const { removeBackground } = await import("@imgly/background-removal");
+  const blob = await removeBackground(file, {
+    output: { format: "image/png", quality: 0.92 },
+    progress: (_clave: string, actual: number, total: number) => {
+      if (onProgress && total > 0) onProgress(Math.round((actual / total) * 100));
+    },
+  } as any);
+  const nombreBase = file.name.replace(/\.[^.]+$/, "");
+  return new File([blob], `${nombreBase}-sin-fondo.png`, { type: "image/png" });
+}
+
 // ── Tipos ─────────────────────────────────────────────────────────────────────
-interface FotoItem { id: string; file: File; preview: string; originalKB: number; optimizedKB: number; optimizing: boolean; }
+interface FotoItem {
+  id: string; file: File; raw: File; preview: string;
+  originalKB: number; optimizedKB: number; optimizing: boolean;
+  sinFondo: boolean; procesandoFondo: boolean; fondoProgreso?: number;
+}
 
 // ── Catálogo de categorías con config por tipo ─────────────────────────────
 const CATEGORIAS_FISICO = [
@@ -148,7 +172,7 @@ function Toggle({ value, onChange, label }: { value: boolean; onChange: (v: bool
         className={`w-10 h-5 rounded-full border transition relative flex-shrink-0 ${value ? "bg-orange-500 border-orange-500" : "bg-gray-200 border-gray-300 dark:bg-[#1a1a2e] dark:border-[#2a2a3e]"}`}>
         <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${value ? "left-5" : "left-0.5"}`} />
       </div>
-      <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
+      {label && <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>}
     </label>
   );
 }
@@ -234,6 +258,7 @@ export default function NuevoProducto() {
 
   // ── Paso 3: Imágenes / archivo ─────────────────────────────────────────
   const [fotos, setFotos] = useState<FotoItem[]>([]);
+  const [autoQuitarFondo, setAutoQuitarFondo] = useState(false);
   const { h: dragH, hov: dragHov } = useDragSort(fotos, setFotos);
 
   const toast_ = (msg: string, tipo: "ok" | "err") => { setToast({ msg, tipo }); setTimeout(() => setToast(null), 4000); };
@@ -262,23 +287,61 @@ export default function NuevoProducto() {
     toast_("Información precargada. Personalízala antes de guardar.", "ok");
   };
 
-  // ── Procesado de imágenes ──────────────────────────────────────────────
+  // ── Pipeline de una foto: (opcional) quitar fondo con IA → optimizar a WebP ─
+  const procesarUnaFoto = async (id: string, rawFile: File, quitarFondo: boolean) => {
+    setFotos(prev => prev.map(f => f.id === id
+      ? { ...f, optimizing: true, procesandoFondo: quitarFondo, fondoProgreso: undefined } : f));
+
+    let base = rawFile;
+    let fondoQuitadoOk = false;
+
+    if (quitarFondo) {
+      try {
+        base = await quitarFondoImagen(rawFile, pct => {
+          setFotos(prev => prev.map(f => f.id === id ? { ...f, fondoProgreso: pct } : f));
+        });
+        fondoQuitadoOk = true;
+      } catch (err) {
+        console.error("Error quitando fondo:", err);
+        toast_("No se pudo quitar el fondo en esta foto (navegador no compatible o sin conexión)", "err");
+        base = rawFile;
+      }
+    }
+
+    try {
+      const opt = await optimizarImagen(base);
+      const pv  = URL.createObjectURL(opt);
+      setFotos(prev => prev.map(f => {
+        if (f.id !== id) return f;
+        URL.revokeObjectURL(f.preview);
+        return {
+          ...f, file: opt, preview: pv, optimizedKB: Math.round(opt.size / 1024),
+          optimizing: false, procesandoFondo: false, fondoProgreso: undefined,
+          sinFondo: fondoQuitadoOk,
+        };
+      }));
+    } catch {
+      setFotos(prev => prev.map(f => f.id === id
+        ? { ...f, optimizing: false, procesandoFondo: false, fondoProgreso: undefined, optimizedKB: f.originalKB } : f));
+    }
+  };
+
+  // ── Alterna quitar/restaurar fondo en una foto ya subida ────────────────
+  const alternarFondoFoto = (foto: FotoItem) => {
+    if (foto.optimizing || foto.procesandoFondo) return;
+    procesarUnaFoto(foto.id, foto.raw, !foto.sinFondo);
+  };
+
+  // ── Procesado de imágenes nuevas ─────────────────────────────────────────
   const procesarImagenes = async (files: File[]) => {
     const nuevas: FotoItem[] = files.map(f => ({
-      id: Math.random().toString(36).slice(2), file: f, preview: URL.createObjectURL(f),
+      id: Math.random().toString(36).slice(2), file: f, raw: f, preview: URL.createObjectURL(f),
       originalKB: Math.round(f.size / 1024), optimizedKB: 0, optimizing: true,
+      sinFondo: false, procesandoFondo: false,
     }));
     setFotos(prev => [...prev, ...nuevas]);
     for (const item of nuevas) {
-      try {
-        const opt = await optimizarImagen(item.file);
-        const pv = URL.createObjectURL(opt);
-        setFotos(prev => prev.map(f => f.id === item.id
-          ? { ...f, file: opt, preview: pv, optimizedKB: Math.round(opt.size / 1024), optimizing: false } : f));
-        URL.revokeObjectURL(item.preview);
-      } catch {
-        setFotos(prev => prev.map(f => f.id === item.id ? { ...f, optimizing: false, optimizedKB: f.originalKB } : f));
-      }
+      await procesarUnaFoto(item.id, item.raw, autoQuitarFondo);
     }
   };
   useEffect(() => () => { fotos.forEach(f => URL.revokeObjectURL(f.preview)); }, []);
@@ -386,6 +449,7 @@ export default function NuevoProducto() {
   const ahorroTotal = fotos.filter(f => !f.optimizing && f.optimizedKB > 0).reduce((acc, f) => {
     return acc + Math.max(0, f.originalKB - f.optimizedKB);
   }, 0);
+  const totalSinFondo = fotos.filter(f => f.sinFondo).length;
 
   // ════════════════════════════════════════════════════════════════════════
   return (
@@ -967,6 +1031,23 @@ export default function NuevoProducto() {
 
             {tipo === "fisico" ? (<>
 
+              {/* ── Quitar fondo con IA (interruptor global) ─────────────── */}
+              <div className="flex items-start justify-between gap-3 p-4 rounded-2xl bg-violet-50 border border-violet-200 dark:bg-violet-950/20 dark:border-violet-500/20">
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-violet-500/15 flex items-center justify-center flex-shrink-0">
+                    <Wand2 className="w-4.5 h-4.5 text-violet-600 dark:text-violet-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">Quitar fondo automáticamente</p>
+                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                      IA que corre en tu propio navegador — tus fotos no se suben a ningún servicio externo.
+                      La primera vez tarda un poco más porque descarga el modelo.
+                    </p>
+                  </div>
+                </div>
+                <Toggle value={autoQuitarFondo} onChange={setAutoQuitarFondo} label="" />
+              </div>
+
               {/* Drop zone */}
               <div
                 onDragOver={e => e.preventDefault()}
@@ -983,22 +1064,33 @@ export default function NuevoProducto() {
               {/* Grid de fotos */}
               {fotos.length > 0 && (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
                     <p className="text-xs text-gray-400 dark:text-gray-600 flex items-center gap-1.5">
                       <GripVertical className="w-3.5 h-3.5" /> Arrastra para cambiar el orden
                     </p>
-                    {ahorroTotal > 0 && (
-                      <div className="flex items-center gap-1.5 text-xs text-emerald-500 dark:text-emerald-400">
-                        <Zap className="w-3.5 h-3.5" />
-                        Ahorraste {ahorroTotal} KB
-                      </div>
-                    )}
+                    <div className="flex items-center gap-3">
+                      {totalSinFondo > 0 && (
+                        <div className="flex items-center gap-1.5 text-xs text-violet-600 dark:text-violet-400">
+                          <Wand2 className="w-3.5 h-3.5" />
+                          {totalSinFondo} sin fondo
+                        </div>
+                      )}
+                      {ahorroTotal > 0 && (
+                        <div className="flex items-center gap-1.5 text-xs text-emerald-500 dark:text-emerald-400">
+                          <Zap className="w-3.5 h-3.5" />
+                          Ahorraste {ahorroTotal} KB
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
                     {fotos.map((foto, i) => (
                       <div key={foto.id} {...dragH(i)}
-                        className={`relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-900 cursor-grab active:cursor-grabbing select-none transition-all
+                        className={`relative aspect-square rounded-xl overflow-hidden select-none transition-all cursor-grab active:cursor-grabbing
+                          ${foto.sinFondo
+                            ? "bg-[repeating-conic-gradient(#e5e7eb_0%_25%,white_0%_50%)] bg-[length:12px_12px] dark:bg-[repeating-conic-gradient(#1f1f30_0%_25%,#0c0c14_0%_50%)]"
+                            : "bg-gray-100 dark:bg-gray-900"}
                           ${dragHov === i ? "ring-2 ring-orange-500 scale-[1.04]" : ""}
                           ${i === 0 ? "ring-2 ring-yellow-500/50" : ""}`}>
                         <img src={foto.preview} className="w-full h-full object-cover pointer-events-none" />
@@ -1010,23 +1102,46 @@ export default function NuevoProducto() {
                         )}
 
                         {foto.optimizing && (
-                          <div className="absolute inset-0 bg-black/65 flex flex-col items-center justify-center gap-1 pointer-events-none">
-                            <Loader2 className="w-5 h-5 text-orange-400 animate-spin" />
-                            <span className="text-[9px] text-orange-300 font-bold">Optimizando</span>
+                          <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-1 pointer-events-none px-2 text-center">
+                            <Loader2 className={`w-5 h-5 animate-spin ${foto.procesandoFondo ? "text-violet-400" : "text-orange-400"}`} />
+                            <span className={`text-[9px] font-bold ${foto.procesandoFondo ? "text-violet-300" : "text-orange-300"}`}>
+                              {foto.procesandoFondo
+                                ? (foto.fondoProgreso ? `IA ${foto.fondoProgreso}%` : "Quitando fondo...")
+                                : "Optimizando"}
+                            </span>
                           </div>
                         )}
 
-                        {!foto.optimizing && foto.optimizedKB > 0 && foto.optimizedKB < foto.originalKB && (
-                          <div className="absolute bottom-1.5 left-1.5 bg-emerald-700/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-0.5 pointer-events-none">
-                            <Zap className="w-2.5 h-2.5" />
-                            -{Math.round((1 - foto.optimizedKB / foto.originalKB) * 100)}%
-                          </div>
-                        )}
+                        {/* Badges inferiores: ahorro de peso + sin fondo */}
+                        <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 pointer-events-none">
+                          {!foto.optimizing && foto.optimizedKB > 0 && foto.optimizedKB < foto.originalKB && (
+                            <div className="bg-emerald-700/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                              <Zap className="w-2.5 h-2.5" />
+                              -{Math.round((1 - foto.optimizedKB / foto.originalKB) * 100)}%
+                            </div>
+                          )}
+                          {!foto.optimizing && foto.sinFondo && (
+                            <div className="bg-violet-600/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                              <Wand2 className="w-2.5 h-2.5" /> Sin fondo
+                            </div>
+                          )}
+                        </div>
 
-                        <button onClick={() => { URL.revokeObjectURL(foto.preview); setFotos(p => p.filter(x => x.id !== foto.id)); }}
-                          className="absolute top-1.5 right-1.5 bg-black/60 hover:bg-red-600 p-1.5 rounded-lg transition">
-                          <X className="w-3.5 h-3.5 text-white" />
-                        </button>
+                        {/* Botones: eliminar + quitar/restaurar fondo */}
+                        <div className="absolute top-1.5 right-1.5 flex flex-col gap-1">
+                          <button onClick={() => { URL.revokeObjectURL(foto.preview); setFotos(p => p.filter(x => x.id !== foto.id)); }}
+                            className="bg-black/60 hover:bg-red-600 p-1.5 rounded-lg transition">
+                            <X className="w-3.5 h-3.5 text-white" />
+                          </button>
+                          {!foto.optimizing && (
+                            <button onClick={(e) => { e.stopPropagation(); alternarFondoFoto(foto); }}
+                              title={foto.sinFondo ? "Restaurar fondo original" : "Quitar fondo con IA"}
+                              className="bg-black/60 hover:bg-violet-600 p-1.5 rounded-lg transition">
+                              {foto.sinFondo ? <Undo2 className="w-3.5 h-3.5 text-white" /> : <Wand2 className="w-3.5 h-3.5 text-white" />}
+                            </button>
+                          )}
+                        </div>
+
                         <div className="absolute bottom-1.5 right-1.5 bg-black/40 p-0.5 rounded pointer-events-none">
                           <GripVertical className="w-2.5 h-2.5 text-white/40" />
                         </div>
@@ -1134,6 +1249,7 @@ export default function NuevoProducto() {
                 ["Precio",    precioFinal ? `L${precioFinal} (L${parseFloat(precio).toFixed(2)} - ${descuento}%)` : `L${parseFloat(precio||"0").toFixed(2)}`],
                 tipo === "fisico" ? ["Stock", stock] : null,
                 tipo === "fisico" && fotos.length > 0 ? ["Fotos", `${fotos.length} imagen${fotos.length>1?"es":""}`] : null,
+                tipo === "fisico" && totalSinFondo > 0 ? ["Fondo removido", `${totalSinFondo} foto${totalSinFondo>1?"s":""}`] : null,
                 archivoDigital ? ["Archivo", archivoDigital.name] : null,
                 portadaDigital ? ["Portada", portadaDigital.name] : null,
               ].filter((x): x is [string, string] => Boolean(x)).map(([k, v]) => (
