@@ -1,10 +1,10 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import {
   Store, Upload, CheckCircle, MapPin, Phone, Mail, Lock,
-  AlertCircle, Eye, EyeOff, IdCard, Link, Info, X, Loader2
+  AlertCircle, Eye, EyeOff, IdCard, Link, Info, X, Loader2, Check
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -39,6 +39,23 @@ const getErrorMessage = (err: any): string => {
   return "Error al registrar";
 };
 
+// ── Códigos temporales de DNI/RTN ─────────────────────────────────────────────
+// Por ahora no le pedimos estos documentos al vendedor: se autogenera un
+// código numérico (13 dígitos para DNI, 14 para RTN) para no romper el
+// backend, que todavía espera estos campos. El día que se quiera pedirlos
+// de nuevo, basta con poner MOSTRAR_DNI_RTN en true.
+const MOSTRAR_DNI_RTN = false;
+function generarCodigoNumerico(largo: number) {
+  let s = "";
+  for (let i = 0; i < largo; i++) s += Math.floor(Math.random() * 10);
+  return s;
+}
+
+// ── Verificación de documento de identidad ────────────────────────────────────
+// Oculta y opcional por ahora — se deja todo el código listo (estado, input,
+// validación) para reactivarla en el futuro con solo poner esto en true.
+const MOSTRAR_VERIFICACION_DOCUMENTO = false;
+
 // ── Indicador de fortaleza de contraseña ─────────────────────────────────────
 function PasswordStrength({ password }: { password: string }) {
   if (!password) return null;
@@ -52,14 +69,15 @@ function PasswordStrength({ password }: { password: string }) {
   const score = checks.filter(Boolean).length;
   const labels = ["", "Muy débil", "Débil", "Regular", "Fuerte", "Muy fuerte"];
   const colors = ["", "bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-emerald-500", "bg-emerald-400"];
+  const textColors = ["", "text-red-600", "text-orange-600", "text-yellow-600", "text-emerald-600", "text-emerald-600"];
   return (
     <div className="space-y-1.5 pt-1">
       <div className="flex gap-1">
         {[1,2,3,4,5].map(i => (
-          <div key={i} className={`h-1.5 flex-1 rounded-full transition-all ${i <= score ? colors[score] : "bg-white/10"}`} />
+          <div key={i} className={`h-1.5 flex-1 rounded-full transition-all ${i <= score ? colors[score] : "bg-gray-200"}`} />
         ))}
       </div>
-      <p className={`text-xs font-semibold ${score >= 4 ? "text-emerald-400" : score >= 3 ? "text-yellow-400" : "text-red-400"}`}>
+      <p className={`text-xs font-semibold ${textColors[score]}`}>
         {labels[score]}
         {score < 3 && " — agrega mayúsculas, números o símbolos"}
       </p>
@@ -73,13 +91,13 @@ function Campo({ label, hint, required, children }: {
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="flex items-center gap-1.5 text-sm font-semibold text-orange-200">
-        {label}{required && <span className="text-red-400">*</span>}
+      <label className="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+        {label}{required && <span className="text-red-500">*</span>}
         {hint && (
           <span className="group relative">
-            <Info className="w-3.5 h-3.5 text-white/30 hover:text-white/60 cursor-help" />
-            <span className="absolute left-0 bottom-5 w-52 bg-gray-900 text-white/80 text-xs rounded-xl px-3 py-2 shadow-lg z-20
-              opacity-0 group-hover:opacity-100 transition pointer-events-none border border-white/10">
+            <Info className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600 cursor-help" />
+            <span className="absolute left-0 bottom-5 w-52 bg-gray-900 text-white/90 text-xs rounded-xl px-3 py-2 shadow-lg z-20
+              opacity-0 group-hover:opacity-100 transition pointer-events-none">
               {hint}
             </span>
           </span>
@@ -90,7 +108,36 @@ function Campo({ label, hint, required, children }: {
   );
 }
 
-const inp = "w-full px-4 py-3.5 rounded-2xl bg-white/10 border-2 border-white/15 text-white placeholder-white/30 text-sm focus:outline-none focus:border-yellow-400 transition-all";
+// ── Indicador de pasos ────────────────────────────────────────────────────────
+function PasoIndicador({ actual }: { actual: number }) {
+  const pasos = ["Datos personales", "Ubicación", "Servicios"];
+  return (
+    <div className="flex items-center mb-8">
+      {pasos.map((p, i) => {
+        const n = i + 1;
+        const activo = actual === n;
+        const completado = actual > n;
+        return (
+          <div key={p} className={`flex items-center ${i < pasos.length - 1 ? "flex-1" : ""}`}>
+            <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all
+                ${completado ? "bg-emerald-500 text-white" : activo ? "bg-orange-500 text-white" : "bg-gray-200 text-gray-500"}`}>
+                {completado ? <Check className="w-4 h-4" /> : n}
+              </div>
+              <span className={`text-[10px] font-semibold text-center whitespace-nowrap
+                ${activo ? "text-orange-600" : completado ? "text-emerald-600" : "text-gray-400"}`}>{p}</span>
+            </div>
+            {i < pasos.length - 1 && (
+              <div className={`flex-1 h-0.5 mx-2 mb-4 transition-all ${actual > n ? "bg-emerald-400" : "bg-gray-200"}`} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+const inp = "w-full px-4 py-3.5 rounded-2xl bg-white border-2 border-gray-200 text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:border-orange-500 transition-all";
 
 // ════════════════════════════════════════════════════════════════════════════
 export default function RegistroVendedor() {
@@ -109,8 +156,14 @@ export default function RegistroVendedor() {
   const [error,      setError]      = useState("");
   const [success,    setSuccess]    = useState(false);
   const [mapsError,  setMapsError]  = useState("");
+  const [step,       setStep]       = useState(1);
   const router = useRouter();
   const docInputRef = useRef<HTMLInputElement>(null);
+
+  // Autogenerar DNI/RTN mientras no se le pidan al vendedor
+  useEffect(() => {
+    setForm(p => ({ ...p, dni: generarCodigoNumerico(13), rtn: generarCodigoNumerico(14) }));
+  }, []);
 
   const municipios = DEPARTAMENTOS.find(d => d.nombre === form.departamento)?.municipios || [];
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
@@ -141,20 +194,52 @@ export default function RegistroVendedor() {
     }
   };
 
+  // ── Validación por paso ────────────────────────────────────────────────────
+  const validarPaso = (n: number) => {
+    if (n === 1) {
+      if (!form.propietario || !form.nombre_tienda || form.telefono.length < 8 || !form.email) {
+        setError("Completa todos los campos obligatorios de datos personales.");
+        return false;
+      }
+    }
+    if (n === 2) {
+      if (!form.departamento || !form.municipio || !form.direccion_exacta) {
+        setError("Completa la ubicación de tu tienda.");
+        return false;
+      }
+    }
+    if (MOSTRAR_VERIFICACION_DOCUMENTO && n === 3 && !documento) {
+      setError("Debes subir una foto de tu documento de identidad (DNI o pasaporte).");
+      return false;
+    }
+    return true;
+  };
+
+  const siguiente = () => {
+    if (!validarPaso(step)) { window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+    setError("");
+    setStep(s => Math.min(3, s + 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const atras = () => {
+    setError("");
+    setStep(s => Math.max(1, s - 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (!documento) {
-      setError("Debes subir una foto de tu documento de identidad (DNI o pasaporte).");
-      return;
-    }
+    // Mientras estemos en un paso intermedio, "enviar" (Enter) solo avanza
+    if (step < 3) { siguiente(); return; }
+    if (!validarPaso(3)) { window.scrollTo({ top: 0, behavior: "smooth" }); return; }
 
     setLoading(true);
 
     const fd = new FormData();
     Object.entries(form).forEach(([k, v]) => { if (v) fd.append(k, v); });
-    fd.append("documento_identidad", documento);
+    if (documento) fd.append("documento_identidad", documento);
     if (logo) fd.append("logo", logo);
 
     try {
@@ -171,286 +256,307 @@ export default function RegistroVendedor() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-900 via-black to-purple-900 flex items-center justify-center p-6">
-        <div className="bg-black/60 backdrop-blur-2xl rounded-3xl border border-emerald-500/30 p-10 max-w-md w-full text-center">
-          <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-5">
-            <CheckCircle className="w-12 h-12 text-emerald-400" />
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-purple-50 flex items-center justify-center p-6">
+        <div className="bg-white rounded-3xl border border-emerald-200 shadow-xl p-10 max-w-md w-full text-center">
+          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-5">
+            <CheckCircle className="w-12 h-12 text-emerald-600" />
           </div>
-          <h2 className="text-2xl font-black text-white mb-3">¡Solicitud enviada!</h2>
-          <p className="text-gray-400 leading-relaxed text-sm">
-            Recibimos tu registro. El administrador revisará tu documento de identidad y aprobará tu tienda.
+          <h2 className="text-2xl font-black text-gray-900 mb-3">¡Solicitud enviada!</h2>
+          <p className="text-gray-500 leading-relaxed text-sm">
+            Recibimos tu registro. El administrador revisará tu información y aprobará tu tienda.
             Te notificaremos cuando esté activa.
           </p>
-          <p className="text-orange-400 text-xs mt-5 font-semibold animate-pulse">Redirigiendo al login...</p>
+          <p className="text-orange-600 text-xs mt-5 font-semibold animate-pulse">Redirigiendo al login...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-900 via-black to-purple-900 p-4 py-10">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-purple-50 p-4 py-10">
       <div className="max-w-2xl mx-auto">
 
         {/* Header */}
-        <div className="text-center mb-10">
-          <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-red-500 to-purple-600">
             REGISTRA TU TIENDA
           </h1>
-          <p className="text-orange-300 mt-2 text-base">Mercado Fénix Honduras · Verificación de identidad requerida</p>
+          <p className="text-gray-500 mt-2 text-base">Mercado Fénix Honduras</p>
         </div>
+
+        <PasoIndicador actual={step} />
 
         <form onSubmit={handleSubmit} className="space-y-6">
 
           {/* Error global */}
           {error && (
-            <div className="flex items-start gap-3 bg-red-950/80 border border-red-500/50 rounded-2xl p-4 text-sm text-red-200 font-semibold">
-              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-red-400" />
+            <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-2xl p-4 text-sm text-red-700 font-semibold">
+              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-red-500" />
               {error}
             </div>
           )}
 
-          {/* ── LOGO (opcional) ─────────────────────────────────────────────── */}
-          <div className="bg-white/[0.04] border border-white/10 rounded-3xl p-6">
-            <p className="text-sm font-bold text-white mb-4">Logo de la tienda <span className="text-white/40 font-normal">(opcional)</span></p>
-            <div className="flex items-center gap-5">
-              <label className="cursor-pointer group flex-shrink-0">
-                <input type="file" accept="image/*" className="hidden"
-                  onChange={e => {
-                    const f = e.target.files?.[0];
-                    if (f) { setLogo(f); setLogoPreview(URL.createObjectURL(f)); }
-                  }} />
-                {logoPreview ? (
-                  <div className="relative w-20 h-20">
-                    <img src={logoPreview} alt="Logo" className="w-20 h-20 object-cover rounded-2xl border-2 border-yellow-500/60" />
-                    <div className="absolute inset-0 rounded-2xl bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                      <Upload className="w-6 h-6 text-white" />
+          {/* ══════════════════════════ PASO 1 — DATOS PERSONALES ══════════════════════════ */}
+          {step === 1 && (<>
+
+            {/* LOGO (opcional) */}
+            <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm">
+              <p className="text-sm font-bold text-gray-900 mb-4">Logo de la tienda <span className="text-gray-400 font-normal">(opcional)</span></p>
+              <div className="flex items-center gap-5">
+                <label className="cursor-pointer group flex-shrink-0">
+                  <input type="file" accept="image/*" className="hidden"
+                    onChange={e => {
+                      const f = e.target.files?.[0];
+                      if (f) { setLogo(f); setLogoPreview(URL.createObjectURL(f)); }
+                    }} />
+                  {logoPreview ? (
+                    <div className="relative w-20 h-20">
+                      <img src={logoPreview} alt="Logo" className="w-20 h-20 object-cover rounded-2xl border-2 border-orange-400" />
+                      <div className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                        <Upload className="w-6 h-6 text-white" />
+                      </div>
                     </div>
+                  ) : (
+                    <div className="w-20 h-20 bg-gray-50 border-2 border-dashed border-gray-300 hover:border-orange-400 rounded-2xl flex flex-col items-center justify-center gap-1 transition group-hover:bg-orange-50">
+                      <Upload className="w-6 h-6 text-gray-400 group-hover:text-orange-500 transition" />
+                      <span className="text-[10px] text-gray-500 font-semibold">Logo</span>
+                    </div>
+                  )}
+                </label>
+                <p className="text-xs text-gray-500 leading-relaxed">Sube el logo de tu tienda. Aparecerá en tus productos y en el perfil de tu tienda.</p>
+              </div>
+            </div>
+
+            {/* Documento de identidad — oculto y opcional por ahora */}
+            {MOSTRAR_VERIFICACION_DOCUMENTO && (
+              <div className="bg-white border-2 border-dashed border-amber-300 rounded-3xl p-6 space-y-3">
+                <div className="flex items-start gap-3">
+                  <IdCard className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold text-gray-900">Foto del documento de identidad</p>
+                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                      DNI, pasaporte o carné de residencia. Solo el administrador podrá ver este documento.
+                    </p>
+                  </div>
+                </div>
+
+                {documento ? (
+                  <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3">
+                    <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-900 font-semibold truncate">{documento.name}</p>
+                      <p className="text-xs text-emerald-600">{(documento.size / 1024).toFixed(0)} KB · Documento cargado</p>
+                    </div>
+                    <button type="button" onClick={() => setDocumento(null)}
+                      className="text-gray-400 hover:text-red-500 transition flex-shrink-0">
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
                 ) : (
-                  <div className="w-20 h-20 bg-white/5 border-2 border-dashed border-white/20 hover:border-orange-400 rounded-2xl flex flex-col items-center justify-center gap-1 transition group-hover:bg-white/[0.08]">
-                    <Upload className="w-6 h-6 text-gray-500 group-hover:text-orange-400 transition" />
-                    <span className="text-[10px] text-gray-600 font-semibold">Logo</span>
-                  </div>
+                  <label className="flex items-center gap-3 cursor-pointer w-full px-4 py-4 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-2xl transition group">
+                    <input ref={docInputRef} type="file" accept="image/*,.pdf" className="hidden"
+                      onChange={e => { if (e.target.files?.[0]) setDocumento(e.target.files[0]); }} />
+                    <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Upload className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-amber-700">Seleccionar documento</p>
+                      <p className="text-xs text-amber-600/80">JPG, PNG, WEBP o PDF · Máx. 10 MB</p>
+                    </div>
+                  </label>
                 )}
-              </label>
-              <p className="text-xs text-white/40 leading-relaxed">Sube el logo de tu tienda. Aparecerá en tus productos y en el perfil de tu tienda.</p>
-            </div>
-          </div>
+              </div>
+            )}
 
-          {/* ── DOCUMENTO DE IDENTIDAD (obligatorio) ────────────────────────── */}
-          <div className="bg-white/[0.04] border-2 border-dashed border-amber-500/40 rounded-3xl p-6 space-y-3">
-            <div className="flex items-start gap-3">
-              <IdCard className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-bold text-white">
-                  Foto del documento de identidad <span className="text-red-400">*</span>
-                </p>
-                <p className="text-xs text-white/40 mt-0.5 leading-relaxed">
-                  DNI, pasaporte o carné de residencia. Requerido para verificar tu identidad y proteger a los compradores.
-                  Solo el administrador podrá ver este documento.
-                </p>
+            <div className="bg-white border border-gray-200 rounded-3xl p-6 space-y-4 shadow-sm">
+              <p className="text-sm font-bold text-gray-900 border-b border-gray-100 pb-3">Datos personales y de la tienda</p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* DNI y RTN — ocultos y autogenerados por ahora */}
+                {MOSTRAR_DNI_RTN && (<>
+                  <Campo label="DNI" required hint="13 dígitos sin guiones">
+                    <input required maxLength={13} placeholder="0801XXXXXXXXXXXX" value={form.dni}
+                      onChange={e => setForm(p => ({ ...p, dni: e.target.value.replace(/\D/g, "").slice(0, 13) }))}
+                      className={inp} />
+                  </Campo>
+
+                  <Campo label="RTN" required hint="14 dígitos (Registro Tributario Nacional)">
+                    <input required maxLength={14} placeholder="08010100XXXXXX" value={form.rtn}
+                      onChange={e => setForm(p => ({ ...p, rtn: e.target.value.replace(/\D/g, "").slice(0, 14) }))}
+                      className={inp} />
+                  </Campo>
+                </>)}
+
+                <Campo label="Nombre del propietario" required>
+                  <input required placeholder="Juan Carlos García" value={form.propietario} onChange={set("propietario")} className={inp} />
+                </Campo>
+
+                <Campo label="Nombre de la tienda" required>
+                  <input required placeholder="Tienda El Fénix" value={form.nombre_tienda} onChange={set("nombre_tienda")} className={inp} />
+                </Campo>
+
+                <Campo label="Teléfono" required hint="8 dígitos, sin guiones ni espacios">
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-500 pointer-events-none" />
+                    <input required maxLength={8} placeholder="98XXXXXX" value={form.telefono}
+                      onChange={e => setForm(p => ({ ...p, telefono: e.target.value.replace(/\D/g, "").slice(0, 8) }))}
+                      className={inp + " pl-10"} />
+                  </div>
+                </Campo>
+
+                <Campo label="Correo electrónico" required hint="Se usará para iniciar sesión también">
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-500 pointer-events-none" />
+                    <input required type="email" placeholder="correo@gmail.com" value={form.email} onChange={set("email")}
+                      className={inp + " pl-10"} />
+                  </div>
+                </Campo>
               </div>
             </div>
+          </>)}
 
-            {documento ? (
-              <div className="flex items-center gap-3 bg-emerald-950/40 border border-emerald-500/30 rounded-2xl px-4 py-3">
-                <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white font-semibold truncate">{documento.name}</p>
-                  <p className="text-xs text-emerald-400">{(documento.size / 1024).toFixed(0)} KB · Documento cargado</p>
+          {/* ══════════════════════════ PASO 2 — UBICACIÓN ══════════════════════════ */}
+          {step === 2 && (
+            <div className="bg-white border border-gray-200 rounded-3xl p-6 space-y-4 shadow-sm">
+              <p className="text-sm font-bold text-gray-900 border-b border-gray-100 pb-3 flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-orange-500" /> Ubicación de la tienda
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Campo label="Departamento" required>
+                  <select required value={form.departamento}
+                    onChange={e => setForm(p => ({ ...p, departamento: e.target.value, municipio: "" }))}
+                    className={inp + " appearance-none"}>
+                    <option value="">Seleccionar...</option>
+                    {DEPARTAMENTOS.map(d => <option key={d.nombre} value={d.nombre}>{d.nombre}</option>)}
+                  </select>
+                </Campo>
+
+                <Campo label="Municipio" required>
+                  <select required value={form.municipio} onChange={set("municipio")} disabled={!form.departamento}
+                    className={inp + " appearance-none disabled:opacity-50"}>
+                    <option value="">{form.departamento ? "Seleccionar..." : "Elige departamento primero"}</option>
+                    {municipios.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </Campo>
+              </div>
+
+              <Campo label="Dirección exacta" required hint="Colonia, calle, número, referencia">
+                <textarea required rows={2} placeholder="Col. Kennedy, calle principal, frente al parque..." value={form.direccion_exacta}
+                  onChange={set("direccion_exacta")}
+                  className={inp + " resize-none"} />
+              </Campo>
+
+              {/* Google Maps */}
+              <Campo label="Ubicación en Google Maps" hint="Pega el link de tu tienda en Google Maps para que los clientes puedan encontrarte">
+                <div className="relative">
+                  <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-500 pointer-events-none" />
+                  <input type="url" placeholder="https://maps.google.com/..." value={form.google_maps_url}
+                    onChange={e => parsearMapsUrl(e.target.value)}
+                    className={inp + " pl-10"} />
                 </div>
-                <button type="button" onClick={() => setDocumento(null)}
-                  className="text-gray-500 hover:text-red-400 transition flex-shrink-0">
-                  <X className="w-4 h-4" />
-                </button>
+                {mapsError && <p className="text-xs text-amber-600 mt-1">{mapsError}</p>}
+                {form.latitud && form.longitud && (
+                  <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1.5">
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    Coordenadas detectadas: {parseFloat(form.latitud).toFixed(5)}, {parseFloat(form.longitud).toFixed(5)}
+                  </p>
+                )}
+                <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+                  Abre Google Maps → busca tu tienda → clic en "Compartir" → copia el link. Las coordenadas se extraen automáticamente.
+                </p>
+              </Campo>
+            </div>
+          )}
+
+          {/* ══════════════════════════ PASO 3 — SERVICIOS ══════════════════════════ */}
+          {step === 3 && (<>
+            <div className="bg-white border border-gray-200 rounded-3xl p-6 space-y-4 shadow-sm">
+              <p className="text-sm font-bold text-gray-900 border-b border-gray-100 pb-3">Servicios que ofreces</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Campo label="Métodos de pago que aceptas" required>
+                  <select required value={form.tipo_pago} onChange={set("tipo_pago")} className={inp + " appearance-none"}>
+                    <option value="">Seleccionar...</option>
+                    <option value="efectivo">Efectivo</option>
+                    <option value="transferencia">Transferencia bancaria</option>
+                    <option value="tigo">Tigo Money</option>
+                    <option value="efectivo,transferencia">Efectivo y transferencia</option>
+                    <option value="efectivo,transferencia,tigo">Todos los métodos</option>
+                  </select>
+                </Campo>
+                <Campo label="Tipo de entrega" required>
+                  <select required value={form.tipo_entrega} onChange={set("tipo_entrega")} className={inp + " appearance-none"}>
+                    <option value="">Seleccionar...</option>
+                    <option value="domicilio">Entrega a domicilio</option>
+                    <option value="tienda">Recoger en tienda</option>
+                    <option value="ambos">Ambos servicios</option>
+                  </select>
+                </Campo>
               </div>
+            </div>
+
+            {/* CONTRASEÑA */}
+            <div className="bg-white border border-gray-200 rounded-3xl p-6 space-y-3 shadow-sm">
+              <p className="text-sm font-bold text-gray-900 border-b border-gray-100 pb-3 flex items-center gap-2">
+                <Lock className="w-4 h-4 text-orange-500" /> Contraseña
+              </p>
+              <Campo label="Contraseña de acceso" required hint="Mínimo 8 caracteres. Usa mayúsculas, números y símbolos.">
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-500 pointer-events-none" />
+                  <input required type={showPass ? "text" : "password"} placeholder="Contraseña segura"
+                    value={form.password} onChange={set("password")}
+                    className={inp + " pl-10 pr-12"} />
+                  <button type="button" onClick={() => setShowPass(p => !p)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition">
+                    {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <PasswordStrength password={form.password} />
+              </Campo>
+            </div>
+
+            {/* AVISO LEGAL */}
+            <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3.5">
+              <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-blue-700 leading-relaxed">
+                Al registrarte aceptas los términos de uso de Mercado Fénix. Tu información personal es confidencial
+                y no será compartida con terceros.
+              </p>
+            </div>
+          </>)}
+
+          {/* ── Navegación entre pasos ─────────────────────────────────────── */}
+          <div className="flex gap-3">
+            {step > 1 && (
+              <button type="button" onClick={atras}
+                className="flex-1 bg-white border-2 border-gray-200 hover:border-gray-300 text-gray-600 font-bold py-4 rounded-2xl transition-all">
+                ← Atrás
+              </button>
+            )}
+
+            {step < 3 ? (
+              <button type="button" onClick={siguiente}
+                className="flex-[2] bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-400 hover:to-orange-500
+                  text-black font-black text-base py-4 rounded-2xl shadow-lg transition-all hover:scale-[1.01] active:scale-[0.99]">
+                Siguiente →
+              </button>
             ) : (
-              <label className="flex items-center gap-3 cursor-pointer w-full px-4 py-4 bg-amber-900/20 hover:bg-amber-900/30 border border-amber-500/25 rounded-2xl transition group">
-                <input ref={docInputRef} type="file" accept="image/*,.pdf" className="hidden"
-                  onChange={e => { if (e.target.files?.[0]) setDocumento(e.target.files[0]); }} />
-                <div className="w-10 h-10 bg-amber-500/15 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Upload className="w-5 h-5 text-amber-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-amber-300">Seleccionar documento</p>
-                  <p className="text-xs text-amber-500/70">JPG, PNG, WEBP o PDF · Máx. 10 MB</p>
-                </div>
-              </label>
+              <button type="submit" disabled={loading}
+                className="flex-[2] bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-400 hover:to-orange-500
+                  text-black font-black text-base py-4 rounded-2xl shadow-lg
+                  flex items-center justify-center gap-3
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                  hover:scale-[1.01] active:scale-[0.99] transition-all">
+                {loading
+                  ? <><Loader2 className="w-5 h-5 animate-spin" /> Enviando solicitud...</>
+                  : <><Store className="w-5 h-5" /> Registrar mi tienda</>}
+              </button>
             )}
           </div>
 
-          {/* ── DATOS PERSONALES ────────────────────────────────────────────── */}
-          <div className="bg-white/[0.04] border border-white/10 rounded-3xl p-6 space-y-4">
-            <p className="text-sm font-bold text-white border-b border-white/10 pb-3">Datos personales y de la tienda</p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Campo label="DNI" required hint="13 dígitos sin guiones">
-                <input required maxLength={13} placeholder="0801XXXXXXXXXXXX" value={form.dni}
-                  onChange={e => setForm(p => ({ ...p, dni: e.target.value.replace(/\D/g, "").slice(0, 13) }))}
-                  className={inp} />
-              </Campo>
-
-              <Campo label="RTN" required hint="14 dígitos (Registro Tributario Nacional)">
-                <input required maxLength={14} placeholder="08010100XXXXXX" value={form.rtn}
-                  onChange={e => setForm(p => ({ ...p, rtn: e.target.value.replace(/\D/g, "").slice(0, 14) }))}
-                  className={inp} />
-              </Campo>
-
-              <Campo label="Nombre del propietario" required>
-                <input required placeholder="Juan Carlos García" value={form.propietario} onChange={set("propietario")} className={inp} />
-              </Campo>
-
-              <Campo label="Nombre de la tienda" required>
-                <input required placeholder="Tienda El Fénix" value={form.nombre_tienda} onChange={set("nombre_tienda")} className={inp} />
-              </Campo>
-
-              <Campo label="Teléfono" required hint="8 dígitos, sin guiones ni espacios">
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-400 pointer-events-none" />
-                  <input required maxLength={8} placeholder="98XXXXXX" value={form.telefono}
-                    onChange={e => setForm(p => ({ ...p, telefono: e.target.value.replace(/\D/g, "").slice(0, 8) }))}
-                    className={inp + " pl-10"} />
-                </div>
-              </Campo>
-
-              <Campo label="Correo electrónico" required hint="Se usará para iniciar sesión también">
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-400 pointer-events-none" />
-                  <input required type="email" placeholder="correo@gmail.com" value={form.email} onChange={set("email")}
-                    className={inp + " pl-10"} />
-                </div>
-              </Campo>
-            </div>
-          </div>
-
-          {/* ── UBICACIÓN ───────────────────────────────────────────────────── */}
-          <div className="bg-white/[0.04] border border-white/10 rounded-3xl p-6 space-y-4">
-            <p className="text-sm font-bold text-white border-b border-white/10 pb-3 flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-orange-400" /> Ubicación de la tienda
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Campo label="Departamento" required>
-                <select required value={form.departamento}
-                  onChange={e => setForm(p => ({ ...p, departamento: e.target.value, municipio: "" }))}
-                  className={inp + " appearance-none"}>
-                  <option value="">Seleccionar...</option>
-                  {DEPARTAMENTOS.map(d => <option key={d.nombre} value={d.nombre}>{d.nombre}</option>)}
-                </select>
-              </Campo>
-
-              <Campo label="Municipio" required>
-                <select required value={form.municipio} onChange={set("municipio")} disabled={!form.departamento}
-                  className={inp + " appearance-none disabled:opacity-50"}>
-                  <option value="">{form.departamento ? "Seleccionar..." : "Elige departamento primero"}</option>
-                  {municipios.map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
-              </Campo>
-            </div>
-
-            <Campo label="Dirección exacta" required hint="Colonia, calle, número, referencia">
-              <textarea required rows={2} placeholder="Col. Kennedy, calle principal, frente al parque..." value={form.direccion_exacta}
-                onChange={set("direccion_exacta")}
-                className={inp + " resize-none"} />
-            </Campo>
-
-            {/* Google Maps */}
-            <Campo label="Ubicación en Google Maps" hint="Pega el link de tu tienda en Google Maps para que los clientes puedan encontrarte">
-              <div className="relative">
-                <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-400 pointer-events-none" />
-                <input type="url" placeholder="https://maps.google.com/..." value={form.google_maps_url}
-                  onChange={e => parsearMapsUrl(e.target.value)}
-                  className={inp + " pl-10"} />
-              </div>
-              {mapsError && <p className="text-xs text-amber-400 mt-1">{mapsError}</p>}
-              {form.latitud && form.longitud && (
-                <p className="text-xs text-emerald-400 mt-1 flex items-center gap-1.5">
-                  <CheckCircle className="w-3.5 h-3.5" />
-                  Coordenadas detectadas: {parseFloat(form.latitud).toFixed(5)}, {parseFloat(form.longitud).toFixed(5)}
-                </p>
-              )}
-              <p className="text-xs text-white/30 mt-1 leading-relaxed">
-                Abre Google Maps → busca tu tienda → clic en "Compartir" → copia el link. Las coordenadas se extraen automáticamente.
-              </p>
-            </Campo>
-          </div>
-
-          {/* ── SERVICIOS ───────────────────────────────────────────────────── */}
-          <div className="bg-white/[0.04] border border-white/10 rounded-3xl p-6 space-y-4">
-            <p className="text-sm font-bold text-white border-b border-white/10 pb-3">Servicios que ofreces</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Campo label="Métodos de pago que aceptas" required>
-                <select required value={form.tipo_pago} onChange={set("tipo_pago")} className={inp + " appearance-none"}>
-                  <option value="">Seleccionar...</option>
-                  <option value="efectivo">Efectivo</option>
-                  <option value="transferencia">Transferencia bancaria</option>
-                  <option value="tigo">Tigo Money</option>
-                  <option value="efectivo,transferencia">Efectivo y transferencia</option>
-                  <option value="efectivo,transferencia,tigo">Todos los métodos</option>
-                </select>
-              </Campo>
-              <Campo label="Tipo de entrega" required>
-                <select required value={form.tipo_entrega} onChange={set("tipo_entrega")} className={inp + " appearance-none"}>
-                  <option value="">Seleccionar...</option>
-                  <option value="domicilio">Entrega a domicilio</option>
-                  <option value="tienda">Recoger en tienda</option>
-                  <option value="ambos">Ambos servicios</option>
-                </select>
-              </Campo>
-            </div>
-          </div>
-
-          {/* ── CONTRASEÑA ──────────────────────────────────────────────────── */}
-          <div className="bg-white/[0.04] border border-white/10 rounded-3xl p-6 space-y-3">
-            <p className="text-sm font-bold text-white border-b border-white/10 pb-3 flex items-center gap-2">
-              <Lock className="w-4 h-4 text-orange-400" /> Contraseña
-            </p>
-            <Campo label="Contraseña de acceso" required hint="Mínimo 8 caracteres. Usa mayúsculas, números y símbolos.">
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-400 pointer-events-none" />
-                <input required type={showPass ? "text" : "password"} placeholder="Contraseña segura"
-                  value={form.password} onChange={set("password")}
-                  className={inp + " pl-10 pr-12"} />
-                <button type="button" onClick={() => setShowPass(p => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition">
-                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              <PasswordStrength password={form.password} />
-            </Campo>
-          </div>
-
-          {/* ── AVISO LEGAL ─────────────────────────────────────────────────── */}
-          <div className="flex items-start gap-3 bg-blue-950/40 border border-blue-500/20 rounded-2xl px-4 py-3.5">
-            <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-blue-300/80 leading-relaxed">
-              Al registrarte aceptas que tu documento de identidad será revisado por el equipo de Mercado Fénix
-              para verificar tu identidad. Este proceso protege tanto a compradores como a vendedores de la plataforma.
-              Tu información personal es confidencial y no será compartida con terceros.
-            </p>
-          </div>
-
-          {/* Botón */}
-          <button type="submit" disabled={loading || !documento}
-            className="w-full bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-400 hover:to-orange-500
-              text-black font-black text-lg py-5 rounded-2xl shadow-xl
-              flex items-center justify-center gap-3
-              disabled:opacity-50 disabled:cursor-not-allowed
-              hover:scale-[1.01] active:scale-[0.99] transition-all">
-            {loading
-              ? <><Loader2 className="w-6 h-6 animate-spin" /> Enviando solicitud...</>
-              : <><Store className="w-6 h-6" /> Registrar mi tienda</>}
-          </button>
-
-          {!documento && (
-            <p className="text-center text-amber-400 text-xs font-semibold flex items-center justify-center gap-1.5">
-              <AlertCircle className="w-3.5 h-3.5" /> Debes subir tu documento de identidad para continuar
-            </p>
-          )}
-
           <div className="text-center">
             <button type="button" onClick={() => router.push("/vendedor")}
-              className="text-white/40 text-sm hover:text-white/70 transition">
+              className="text-gray-400 text-sm hover:text-gray-600 transition">
               ← Ya tengo cuenta, iniciar sesión
             </button>
           </div>
