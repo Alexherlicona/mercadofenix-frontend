@@ -9,7 +9,7 @@ import {
 import Header from "@/components/ui/header";
 import ProductCard from "@/components/ui/ProductCard";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://mercadofenix-backend.onrender.com";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 async function getData() {
   try {
@@ -77,7 +77,7 @@ function HeroBanner({ onSearch }: { onSearch: (q: string) => void }) {
           </h1>
 
           <p className="text-white/70 text-sm lg:text-base mb-6 max-w-sm">
-            Miles de productos de tiendas locales hondureñas. Compra con confianza.
+            Productos de tiendas locales hondureñas. Compra con confianza.
           </p>
 
           {/* Barra de búsqueda */}
