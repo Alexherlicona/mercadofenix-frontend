@@ -15,11 +15,11 @@ const PLANES = [
   {
     key:        "basico",
     nombre:     "Básico",
-    precio:     300,
+    precio:     100,
     icon:       <Zap className="w-6 h-6" />,
-    color:      "text-blue-400",
-    border:     "border-blue-500/40",
-    bg:         "bg-blue-900/10",
+    color:      "text-blue-600 dark:text-blue-400",
+    border:     "border-blue-300 dark:border-blue-500/40",
+    bg:         "bg-blue-50 dark:bg-blue-900/10",
     btnBg:      "bg-blue-600 hover:bg-blue-500",
     popular:    false,
     incluye: [
@@ -39,11 +39,11 @@ const PLANES = [
   {
     key:        "pro",
     nombre:     "Pro",
-    precio:     500,
+    precio:     300,
     icon:       <Star className="w-6 h-6" />,
-    color:      "text-purple-400",
-    border:     "border-purple-500/40",
-    bg:         "bg-purple-900/10",
+    color:      "text-purple-600 dark:text-purple-400",
+    border:     "border-purple-300 dark:border-purple-500/40",
+    bg:         "bg-purple-50 dark:bg-purple-900/10",
     btnBg:      "bg-purple-600 hover:bg-purple-500",
     popular:    true,
     incluye: [
@@ -63,11 +63,11 @@ const PLANES = [
   {
     key:        "premium",
     nombre:     "Premium",
-    precio:     800,
+    precio:     500,
     icon:       <Crown className="w-6 h-6" />,
-    color:      "text-amber-400",
-    border:     "border-amber-500/40",
-    bg:         "bg-amber-900/10",
+    color:      "text-amber-600 dark:text-amber-400",
+    border:     "border-amber-300 dark:border-amber-500/40",
+    bg:         "bg-amber-50 dark:bg-amber-900/10",
     btnBg:      "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500",
     popular:    false,
     incluye: [
@@ -128,21 +128,21 @@ export default function SuscripcionExpiradaPage() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
       <div className="w-10 h-10 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white">
 
       {/* Banner de alerta */}
-      <div className="bg-gradient-to-r from-red-900/80 to-orange-900/60 border-b border-red-500/30 px-4 py-4">
+      <div className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/80 dark:to-orange-900/60 border-b border-red-200 dark:border-red-500/30 px-4 py-4">
         <div className="max-w-4xl mx-auto flex items-center gap-3">
-          <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0" />
+          <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0" />
           <div>
-            <p className="font-bold text-white text-sm">Tu suscripción ha expirado</p>
-            <p className="text-xs text-red-300 mt-0.5">
+            <p className="font-bold text-gray-900 dark:text-white text-sm">Tu suscripción ha expirado</p>
+            <p className="text-xs text-red-700 dark:text-red-300 mt-0.5">
               Tu tienda está temporalmente inactiva. Renueva para que tus clientes puedan verte.
             </p>
           </div>
@@ -154,28 +154,28 @@ export default function SuscripcionExpiradaPage() {
         {/* Hero */}
         <div className="text-center space-y-3">
           <div className="w-16 h-16 bg-gradient-to-br from-orange-600 to-red-600 rounded-2xl flex items-center justify-center mx-auto shadow-2xl">
-            <span className="text-2xl font-black">MF</span>
+            <span className="text-2xl font-black text-white">MF</span>
           </div>
-          <h1 className="text-3xl font-black text-white">
+          <h1 className="text-3xl font-black text-gray-900 dark:text-white">
             {vendedor?.nombre_tienda
               ? `¡Hola, ${vendedor.nombre_tienda}!`
               : "Tu suscripción expiró"}
           </h1>
-          <p className="text-gray-400 max-w-md mx-auto text-sm leading-relaxed">
+          <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto text-sm leading-relaxed">
             Para seguir vendiendo en Mercado Fénix y que tus productos sean visibles para miles de compradores hondureños, elige un plan de renovación.
           </p>
         </div>
 
         {/* Comparativa rápida */}
-        <div className="bg-gray-900/60 border border-white/5 rounded-3xl p-5">
+        <div className="bg-white dark:bg-gray-900/60 border border-gray-200 dark:border-white/5 rounded-3xl p-5">
           <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 text-center">
             ¿Qué incluye cada plan?
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-white/5">
-                  <td className="pb-3 text-gray-600 font-semibold">Característica</td>
+                <tr className="border-b border-gray-200 dark:border-white/5">
+                  <td className="pb-3 text-gray-400 dark:text-gray-600 font-semibold">Característica</td>
                   {PLANES.map(p => (
                     <td key={p.key} className={`pb-3 text-center font-bold ${p.color}`}>
                       {p.icon} {p.nombre}
@@ -183,7 +183,7 @@ export default function SuscripcionExpiradaPage() {
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.03]">
+              <tbody className="divide-y divide-gray-100 dark:divide-white/[0.03]">
                 {[
                   { label: "Productos",         vals: ["30", "150", "∞"] },
                   { label: "Destacados",         vals: ["2", "10", "∞"] },
@@ -197,8 +197,8 @@ export default function SuscripcionExpiradaPage() {
                     {row.vals.map((v, i) => (
                       <td key={i} className="py-2 text-center">
                         {typeof v === "boolean"
-                          ? v ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 mx-auto" /> : <X className="w-3.5 h-3.5 text-gray-700 mx-auto" />
-                          : <span className="text-white font-semibold">{v}</span>}
+                          ? v ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 mx-auto" /> : <X className="w-3.5 h-3.5 text-gray-300 dark:text-gray-700 mx-auto" />
+                          : <span className="text-gray-900 dark:text-white font-semibold">{v}</span>}
                       </td>
                     ))}
                   </tr>
@@ -213,7 +213,7 @@ export default function SuscripcionExpiradaPage() {
           {PLANES.map(plan => (
             <div key={plan.key}
               className={`relative rounded-3xl border-2 p-5 flex flex-col gap-4 transition-all
-                ${plan.popular ? "border-purple-500/60 bg-purple-900/10" : `${plan.border} ${plan.bg}`}
+                ${plan.popular ? "border-purple-400 dark:border-purple-500/60 bg-purple-50 dark:bg-purple-900/10" : `${plan.border} ${plan.bg}`}
                 ${planSel === plan.key ? "scale-[1.02] shadow-2xl" : "hover:scale-[1.01]"}`}>
 
               {plan.popular && (
@@ -228,23 +228,23 @@ export default function SuscripcionExpiradaPage() {
                   <span className={plan.color}>{plan.icon}</span>
                 </div>
                 <p className={`text-lg font-black ${plan.color}`}>{plan.nombre}</p>
-                <p className="text-3xl font-black text-white mt-1">
+                <p className="text-3xl font-black text-gray-900 dark:text-white mt-1">
                   L{plan.precio}
                   <span className="text-sm font-normal text-gray-500">/mes</span>
                 </p>
               </div>
 
               {/* Descuentos */}
-              <div className="bg-gray-900/50 rounded-2xl p-3 space-y-1 text-xs">
+              <div className="bg-gray-50 dark:bg-gray-900/50 rounded-2xl p-3 space-y-1 text-xs">
                 <p className="text-gray-500 font-semibold">Descuentos por adelantado:</p>
                 {[
                   { m: 3,  d: 5  },
                   { m: 6,  d: 10 },
                   { m: 12, d: 20 },
                 ].map(({ m, d }) => (
-                  <div key={m} className="flex justify-between text-gray-400">
+                  <div key={m} className="flex justify-between text-gray-600 dark:text-gray-400">
                     <span>{m} meses</span>
-                    <span className="text-emerald-400 font-bold">-{d}% = L{(plan.precio * m * (1 - d/100)).toFixed(0)}</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">-{d}% = L{(plan.precio * m * (1 - d/100)).toFixed(0)}</span>
                   </div>
                 ))}
               </div>
@@ -252,13 +252,13 @@ export default function SuscripcionExpiradaPage() {
               {/* Incluye */}
               <div className="flex-1 space-y-1.5">
                 {plan.incluye.map(item => (
-                  <div key={item} className="flex items-start gap-2 text-xs text-gray-300">
+                  <div key={item} className="flex items-start gap-2 text-xs text-gray-700 dark:text-gray-300">
                     <CheckCircle2 className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 ${plan.color}`} />
                     {item}
                   </div>
                 ))}
                 {plan.noIncluye.map(item => (
-                  <div key={item} className="flex items-start gap-2 text-xs text-gray-600">
+                  <div key={item} className="flex items-start gap-2 text-xs text-gray-400 dark:text-gray-600">
                     <X className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                     {item}
                   </div>
@@ -277,9 +277,9 @@ export default function SuscripcionExpiradaPage() {
         </div>
 
         {/* Contacto directo */}
-        <div className="bg-gray-900 border border-white/5 rounded-3xl p-6 text-center space-y-4">
-          <p className="font-bold text-white">¿Tienes preguntas?</p>
-          <p className="text-sm text-gray-400">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/5 rounded-3xl p-6 text-center space-y-4">
+          <p className="font-bold text-gray-900 dark:text-white">¿Tienes preguntas?</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Nuestro equipo está disponible de lunes a sábado de 8am a 6pm para ayudarte a elegir el plan correcto.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -289,14 +289,14 @@ export default function SuscripcionExpiradaPage() {
               <MessageCircle className="w-4 h-4" /> WhatsApp soporte
             </a>
             <button onClick={() => router.push("/vendedor")}
-              className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold rounded-2xl text-sm transition-all">
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-2xl text-sm transition-all">
               Volver al inicio
             </button>
           </div>
         </div>
 
         {/* Nota legal */}
-        <p className="text-center text-xs text-gray-600 pb-4">
+        <p className="text-center text-xs text-gray-400 dark:text-gray-600 pb-4">
           Mercado Fénix Honduras · Los precios están en Lempiras (HNL) · Los planes se renuevan mensualmente
         </p>
       </div>
