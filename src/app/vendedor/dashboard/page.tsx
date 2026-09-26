@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { differenceInDays, parseISO, format } from "date-fns";
 import { es } from "date-fns/locale";
+import InstalarAppCarousel from "@/components/ui/InstalarAppCarousel";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -266,7 +267,7 @@ export default function VendedorDashboard() {
           )}
         </div>
       )}
-
+      <InstalarAppCarousel />
       {/* ── ALERTA MENSAJES ───────────────────────────────────────────────── */}
       {msgs > 0 && (
         <button onClick={() => router.push("/vendedor/dashboard/pedidos")}
