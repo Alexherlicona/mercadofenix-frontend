@@ -8,6 +8,7 @@ import {
   ChevronRight, Sun, Moon
 } from "lucide-react";
 import { ThemeProvider, useTheme } from "./ThemeContext";
+import NotificationBell from "@/components/ui/NotificationBell";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -170,6 +171,9 @@ function VendedorLayoutInner({ children }: { children: React.ReactNode }) {
 
         {/* Tema + Logout */}
         <div className="p-2.5 border-t border-gray-200 dark:border-white/[0.06] flex-shrink-0 space-y-1">
+          <div className="px-4 py-2 border-b border-gray-100 dark:border-white/[0.06]">
+            <NotificationBell tipo="vendedor" />
+          </div>
           <ThemeToggle />
           <button onClick={logout}
             className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-600 dark:hover:text-red-400 dark:hover:bg-red-500/10 transition-all">
@@ -193,7 +197,12 @@ function VendedorLayoutInner({ children }: { children: React.ReactNode }) {
           <p className="flex-1 text-base font-bold bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
             MERCADO FÉNIX
           </p>
-          <ThemeToggle compact />
+          <div className="flex items-center gap-2">
+          <ThemeToggle compact />  
+          <NotificationBell tipo="vendedor" />
+          
+        </div>
+          
           {noLeidos > 0 && (
             <button onClick={() => router.push("/vendedor/dashboard/pedidos")}
               className="flex items-center gap-1.5 bg-red-50 border border-red-200 dark:bg-red-500/15 dark:border-red-500/20 rounded-full px-3 py-1.5">
