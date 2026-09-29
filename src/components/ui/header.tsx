@@ -6,6 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Search, X, MoreVertical } from "lucide-react";
 import CartIcon from "./CartIcon";
+import NotificationBell from "@/components/ui/NotificationBell";
 
 const HONDURAS_LOCATIONS: Record<string, string[]> = {
   "Francisco Morazán": ["Tegucigalda", "Comayagüela", "Valle de Ángeles", "Santa Lucía", "Ojojona"],
@@ -91,7 +92,7 @@ export default function Header() {
               className="flex-shrink-0 relative p-2.5 rounded-2xl bg-orange-50 hover:bg-orange-100 border border-orange-100 transition-all hover:shadow-sm active:scale-95">
               <CartIcon />
             </Link>
-
+            <NotificationBell tipo="cliente" />
             {/* ── Nav desktop ──────────────────────────────────────────────── */}
             <nav className="hidden lg:flex items-center gap-0.5 flex-shrink-0">
               {NAV_LINKS.map(({ href, label }) => {
@@ -164,7 +165,7 @@ export default function Header() {
                 { href: "/menu/soporte",        label: "Soporte técnico"   },
                 { href: "/menu/sobre-nosotros", label: "Sobre nosotros"    },
                 { href: "/menu/contacto",       label: "Contáctanos"       },
-                { href: "/menu/reportes",       label: "Reportes y quejas" },
+                { href: "/menu/reportes-quejas",       label: "Reportes y quejas" },
               ].map(({ href, label }) => (
                 <Link key={href} href={href} onClick={() => setMenuOpen(false)}
                   className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-800 transition">
