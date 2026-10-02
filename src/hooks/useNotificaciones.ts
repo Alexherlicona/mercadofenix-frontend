@@ -1,7 +1,7 @@
 // src/hooks/useNotificaciones.ts
 //
 // Hook que:
-// 1. Registra el Service Worker
+// 1. Registra el Service Worker (/sw.js — ver ese archivo)
 // 2. Pide permiso de notificaciones al usuario
 // 3. Suscribe al servidor Web Push y envía la suscripción al backend
 // 4. Expone el número de notificaciones no leídas y la lista completa
@@ -14,7 +14,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const POLL_INTERVAL_MS = 30_000; // refrescar cada 30 segundos
+const POLL_INTERVAL_MS = 30_000; // refrescar cada 30 segundos (respaldo del push)
 
 export type TipoUsuario = "cliente" | "vendedor";
 
@@ -148,7 +148,8 @@ export function useNotificaciones(tipo: TipoUsuario) {
 
     const init = async () => {
       try {
-        // Registrar el service worker
+        // Registrar el service worker (debe existir en /public/sw.js para
+        // quedar servido en la raíz del sitio — ver ese archivo)
         const sw = await navigator.serviceWorker.register("/sw.js");
         swRef.current = sw;
 
@@ -166,6 +167,9 @@ export function useNotificaciones(tipo: TipoUsuario) {
           }
         }
       } catch (e) {
+        // Si esto falla (ej. /sw.js da 404), el push nunca se activa y solo
+        // queda el polling de abajo como respaldo — revisa la consola si ves
+        // este warning de forma persistente.
         console.warn("[SW] Error registrando:", e);
       }
     };
@@ -173,11 +177,27 @@ export function useNotificaciones(tipo: TipoUsuario) {
     init();
   }, [suscribirPush]);
 
-  // ── Polling cada 30 s para actualizar el contador ─────────────────────────
+  // ── Polling cada 30 s para actualizar el contador (respaldo del push) ─────
   useEffect(() => {
     cargar();
     const id = setInterval(cargar, POLL_INTERVAL_MS);
     return () => clearInterval(id);
+  }, [cargar]);
+
+  // ── Refrescar al instante cuando el usuario vuelve a esta pestaña ─────────
+  // Esto evita la sensación de "tengo que recargar la página": en vez de
+  // esperar hasta 30s al próximo tick del polling, se refresca apenas la
+  // pestaña recupera el foco (cambiar de app, volver de minimizado, etc.).
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") cargar();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
   }, [cargar]);
 
   return {
