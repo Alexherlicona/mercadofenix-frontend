@@ -204,7 +204,7 @@ export function useNotificaciones(tipo: TipoUsuario) {
 
     const init = async () => {
       try {
-        const sw = await navigator.serviceWorker.register("src/app/public/sw.js");
+        const sw = await navigator.serviceWorker.register("/sw.js");
         swRef.current = sw;
         await navigator.serviceWorker.ready;
 
