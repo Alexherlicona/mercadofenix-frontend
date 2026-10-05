@@ -1,7 +1,7 @@
 // src/hooks/useNotificaciones.ts
 //
 // Hook que:
-// 1. Registra el Service Worker (/sw.js — ver ese archivo)
+// 1. Registra el Service Worker (/sw.js)
 // 2. Pide permiso de notificaciones al usuario
 // 3. Suscribe al servidor Web Push y envía la suscripción al backend
 // 4. Expone el número de notificaciones no leídas y la lista completa
@@ -94,9 +94,19 @@ export function useNotificaciones(tipo: TipoUsuario) {
   const suscribirPush = useCallback(async (sw: ServiceWorkerRegistration) => {
     try {
       // Obtener clave pública VAPID del servidor
-      const res  = await fetch(`${API_URL}/api/notificaciones/vapid-public-key`);
-      if (!res.ok) return;
+      const res = await fetch(`${API_URL}/api/notificaciones/vapid-public-key`);
+      if (!res.ok) {
+        console.error(
+          `[Push] No se pudo obtener la clave VAPID del backend (HTTP ${res.status}). ` +
+          `¿Está VAPID_PUBLIC_KEY configurada en el .env del backend?`
+        );
+        return;
+      }
       const data = await res.json();
+      if (!data?.public_key) {
+        console.error("[Push] El backend respondió sin 'public_key'. Revisa /api/notificaciones/vapid-public-key");
+        return;
+      }
       const appServerKey = urlBase64ToUint8Array(data.public_key);
 
       // Suscribirse al servidor push del navegador
@@ -117,60 +127,108 @@ export function useNotificaciones(tipo: TipoUsuario) {
         ? "/api/notificaciones/suscribir/vendedor"
         : "/api/notificaciones/suscribir/cliente";
 
-      await fetch(`${API_URL}${path}`, {
+      const resSub = await fetch(`${API_URL}${path}`, {
         method:  "POST",
         headers: { ...authHdr(tipo), "Content-Type": "application/json" },
         body:    JSON.stringify({ subscription: subscription.toJSON(), dispositivo }),
       });
 
+      if (!resSub.ok) {
+        console.error(
+          `[Push] El backend rechazó guardar la suscripción (HTTP ${resSub.status}). ` +
+          `Revisa CORS y que el token de auth sea válido.`
+        );
+        return;
+      }
+
       setSuscrito(true);
       console.log("[Push] ✓ Suscrito correctamente");
     } catch (e) {
-      console.warn("[Push] Error al suscribir:", e);
+      // Causa típica aquí: applicationServerKey inválida → revisar que
+      // VAPID_PUBLIC_KEY y VAPID_PRIVATE_KEY en el backend sean el MISMO par
+      // generado juntos (no uno de un par y otro de otro).
+      console.error("[Push] Error al suscribir:", e);
     }
   }, [tipo]);
 
   // ── Pedir permiso explícitamente (llamar desde un botón) ──────────────────
   const pedirPermiso = useCallback(async () => {
-    if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
+    if (!("Notification" in window) || !("serviceWorker" in navigator)) {
+      console.warn("[Push] Este navegador no soporta Notification o Service Worker.");
+      return;
+    }
 
     const resultado = await Notification.requestPermission();
     setPermiso(resultado);
 
     if (resultado === "granted" && swRef.current) {
       await suscribirPush(swRef.current);
+    } else if (resultado === "granted" && !swRef.current) {
+      console.error(
+        "[Push] Permiso concedido pero el Service Worker nunca se registró — " +
+        "revisa el warning de [SW] más arriba en la consola."
+      );
     }
   }, [suscribirPush]);
 
-  // ── Inicializar: registrar SW + permiso actual ─────────────────────────────
+  // ── Inicializar: leer permiso + registrar SW ────────────────────────────────
   useEffect(() => {
-    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+    if (typeof window === "undefined") return;
+
+    // 1. Leer el permiso actual SIEMPRE, sin depender de si el Service
+    //    Worker logra registrarse. Antes, si el registro fallaba, este
+    //    estado se quedaba en "default" para siempre y la campana volvía a
+    //    pedir activar las notificaciones en cada recarga, aunque el
+    //    navegador ya tuviera el permiso concedido de una vez anterior.
+    if ("Notification" in window) {
+      setPermiso(Notification.permission);
+    }
+
+    if (!("serviceWorker" in navigator)) {
+      console.warn("[SW] Este navegador no soporta Service Workers — el push no puede funcionar aquí.");
+      return;
+    }
+
+    // 2. Los Service Workers (y por lo tanto el Push) SOLO funcionan en un
+    //    contexto seguro: HTTPS, o localhost para desarrollo. Si el sitio
+    //    corre sobre HTTP en producción, esto fallará siempre sin importar
+    //    qué más se configure — es la causa más común de que nada funcione.
+    if (!window.isSecureContext) {
+      console.error(
+        "[SW] El sitio NO está en un contexto seguro (falta HTTPS). Los " +
+        "Service Workers y las notificaciones push no funcionan sobre HTTP " +
+        "en producción. Instala un certificado SSL en tu dominio."
+      );
+      return;
+    }
 
     const init = async () => {
       try {
-        // Registrar el service worker (debe existir en /public/sw.js para
-        // quedar servido en la raíz del sitio — ver ese archivo)
         const sw = await navigator.serviceWorker.register("/sw.js");
         swRef.current = sw;
+        await navigator.serviceWorker.ready;
 
-        // Revisar permiso actual
         const perm = Notification.permission;
         setPermiso(perm);
 
         if (perm === "granted") {
-          // Ya tiene permiso — verificar si ya está suscrito
           const existingSub = await sw.pushManager.getSubscription();
           if (existingSub) {
             setSuscrito(true);
+            console.log("[Push] Ya había una suscripción push activa en este navegador");
           } else {
             await suscribirPush(sw);
           }
         }
       } catch (e) {
-        // Si esto falla (ej. /sw.js da 404), el push nunca se activa y solo
-        // queda el polling de abajo como respaldo — revisa la consola si ves
-        // este warning de forma persistente.
-        console.warn("[SW] Error registrando:", e);
+        console.error(
+          "[SW] Error registrando /sw.js. Verifica: " +
+          "(1) que el archivo exista en public/sw.js y que al abrir " +
+          "https://tu-sitio.com/sw.js en el navegador se vea el código JS " +
+          "(no un 404 ni la página de Next.js), " +
+          "(2) que el sitio esté en HTTPS.",
+          e
+        );
       }
     };
 
@@ -185,9 +243,6 @@ export function useNotificaciones(tipo: TipoUsuario) {
   }, [cargar]);
 
   // ── Refrescar al instante cuando el usuario vuelve a esta pestaña ─────────
-  // Esto evita la sensación de "tengo que recargar la página": en vez de
-  // esperar hasta 30s al próximo tick del polling, se refresca apenas la
-  // pestaña recupera el foco (cambiar de app, volver de minimizado, etc.).
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState === "visible") cargar();
