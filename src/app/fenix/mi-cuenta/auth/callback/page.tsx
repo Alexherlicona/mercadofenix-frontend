@@ -2,43 +2,49 @@
 "use client";
 
 import { Suspense, useEffect, useState, useRef } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
-import CartIcon from "@/components/ui/CartIcon";
-import Link from "next/link";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 function GoogleCallbackContent() {
-  const pathname = usePathname();
-  const NAV_LINKS = [
-    { href: "/fenix", label: "Inicio" },
-    { href: "/fenix/tiendas", label: "Tiendas" },
-    { href: "/fenix/productos", label: "Productos" },
-    { href: "/fenix/favoritos", label: "Favoritos" },
-    { href: "/fenix/mi-cuenta", label: "Mi cuenta" },
-  ];
   const router = useRouter();
-  const params = useSearchParams();
   const [estado, setEstado] = useState<"cargando" | "exito" | "error">("cargando");
   const [mensaje, setMensaje] = useState("");
   const [esNuevo, setEsNuevo] = useState(false);
   const ran = useRef(false);
 
   useEffect(() => {
-    if (ran.current) return;
-    ran.current = true;
+  if (ran.current) return;
+  ran.current = true;
 
-    const code = params.get("code");
-    const error = params.get("error");
+  const search = new URLSearchParams(window.location.search);
+  const code  = search.get("code");
+  const error = search.get("error");
+  const next  = search.get("next") || "/fenix/mi-cuenta";
 
-    if (error || !code) {
-      setEstado("error");
-      setMensaje(error === "access_denied"
-        ? "Cancelaste el inicio de sesión con Google."
-        : "Google no pudo completar el proceso. Intenta de nuevo.");
+  if (error) {
+    setEstado("error");
+    setMensaje(error === "access_denied"
+      ? "Cancelaste el inicio de sesión con Google."
+      : "Google no pudo completar el proceso. Intenta de nuevo.");
+    return;
+  }
+
+  if (!code) {
+    // Sin code pero con sesión ya guardada: no es un error, seguimos
+    if (localStorage.getItem("access_token")) {
+      router.replace(next);
       return;
     }
+    setEstado("error");
+    setMensaje("Google no pudo completar el proceso. Intenta de nuevo.");
+    return;
+  }
+
+  // Un code de Google solo se puede usar una vez: evita doble petición
+  if (sessionStorage.getItem("google_code_used") === code) return;
+  sessionStorage.setItem("google_code_used", code);
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30_000);
@@ -85,28 +91,7 @@ function GoogleCallbackContent() {
 
   return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
-      <div className="flex items-center gap-3 pt-3 pb-1">
-        <h3 className="text-1xl font-black text-gray-900">Productos</h3>
-        <div className="flex items-center gap-2">
-          <nav className="hidden lg:flex items-center gap-0.5 flex-shrink-0 ml-1">
-            {NAV_LINKS.map(({ href, label }) => {
-              const isActive = pathname === href;
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={`px-3 py-2 rounded-xl text-sm font-medium text-gray-600 hover:text-orange-600 hover:bg-orange-50 transition whitespace-nowrap ${isActive ? "text-orange-500 bg-gray-100" : "text-gray-500"
-                    }`}
-                >
-                  <span className={`${isActive ? "font-bold" : ""}`}>
-                    {label}
-                  </span>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-      </div>
+      
       <div className="text-center space-y-4 max-w-sm w-full">
         {estado === "cargando" && (
           <>
