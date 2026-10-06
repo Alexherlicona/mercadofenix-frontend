@@ -81,6 +81,7 @@ function GoogleCallbackContent() {
         }, 1200);
       })
       .catch(err => {
+        console.error("Callback Google falló:", err);   // ← nueva
         clearTimeout(timeoutId);
         setEstado("error");
         setMensaje(err.name === "AbortError"
