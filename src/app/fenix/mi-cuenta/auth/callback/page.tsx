@@ -23,13 +23,54 @@ function GoogleCallbackContent() {
   const error = search.get("error");
   const next  = search.get("next") || "/fenix/mi-cuenta";
 
-  if (error) {
-    setEstado("error");
-    setMensaje(error === "access_denied"
-      ? "Cancelaste el inicio de sesión con Google."
-      : "Google no pudo completar el proceso. Intenta de nuevo.");
-    return;
-  }
+    // Dentro de GoogleCallbackContent (puedes borrar `const ran = useRef(false)`)
+  useEffect(() => {
+    const search = new URLSearchParams(window.location.search);
+    const code  = search.get("code");
+    const error = search.get("error");
+    const next  = search.get("next") || "/fenix/mi-cuenta";
+
+    if (error) {
+      setEstado("error");
+      setMensaje(error === "access_denied"
+        ? "Cancelaste el inicio de sesión con Google."
+        : "Google no pudo completar el proceso. Intenta de nuevo.");
+      return;
+    }
+
+    if (!code) {
+      if (localStorage.getItem("access_token")) router.replace(next);
+      else { setEstado("error"); setMensaje("Google no pudo completar el proceso. Intenta de nuevo."); }
+      return;
+    }
+
+    let vivo = true;
+    canjearCode(code)
+      .then(data => {
+        localStorage.setItem("access_token", data.access_token);
+        if (data.user) {
+          localStorage.setItem("cliente_nombre", `${data.user.nombres || ""} ${data.user.apellidos || ""}`.trim());
+          localStorage.setItem("cliente_id", String(data.user.id));
+          if (data.user.avatar_url) localStorage.setItem("cliente_avatar", data.user.avatar_url);
+        }
+        if (!vivo) return;
+        setEstado("exito");
+        setEsNuevo(!!data.user?.es_nuevo);
+        setTimeout(() => {
+          router.replace(data.user?.es_nuevo ? "/fenix/mi-cuenta/completar-perfil" : next);
+        }, 1200);
+      })
+      .catch(err => {
+        console.error("Callback Google falló:", err);
+        if (!vivo) return;
+        setEstado("error");
+        setMensaje(err.message === "TIMEOUT"
+          ? "El servidor tardó demasiado en responder. Intenta de nuevo."
+          : err.message || "Error al conectar con el servidor");
+      });
+
+    return () => { vivo = false; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!code) {
     // Sin code pero con sesión ya guardada: no es un error, seguimos
@@ -90,6 +131,24 @@ function GoogleCallbackContent() {
       });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Fuera del componente, a nivel de módulo
+const pendientes = new Map<string, Promise<any>>();
+
+function canjearCode(code: string) {
+  if (!pendientes.has(code)) {
+    const p = Promise.race([
+      fetch(`${API}/api/auth/google/callback?code=${encodeURIComponent(code)}`)
+        .then(async r => {
+          const data = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(data.detail || "Error al autenticar");
+          return data;
+        }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error("TIMEOUT")), 30_000)),
+    ]);
+    pendientes.set(code, p);
+  }
+  return pendientes.get(code)!;
+}
   return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
       
