@@ -4,29 +4,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Phone, Lock, Mail, MapPin, CheckCircle, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { HONDURAS_LOCATIONS } from "@/lib/honduras";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-const HONDURAS_LOCATIONS: Record<string, string[]> = {
-  "Francisco Morazán": ["Tegucigalpa", "Comayagüela", "Valle de Ángeles", "Santa Lucía", "Ojojona"],
-  "Cortés": ["San Pedro Sula", "Choloma", "La Lima", "Villanueva", "Puerto Cortés"],
-  "Atlántida": ["La Ceiba", "Tela", "El Progreso", "Jutiapa"],
-  "Comayagua": ["Comayagua", "Siguatepeque", "La Trinidad"],
-  "Santa Bárbara": ["Santa Bárbara", "San Marcos", "Quimistán"],
-  "Copán": ["Santa Rosa de Copán", "La Entrada", "Copán Ruinas"],
-  "Olancho": ["Juticalpa", "Catacamas", "San Francisco de la Paz"],
-  "Choluteca": ["Choluteca", "El Triunfo", "Pespire"],
-  "El Paraíso": ["Danlí", "Yuscarán", "El Paraíso"],
-  "Yoro": ["Yoro", "El Progreso", "Morazán"],
-  "Colón": ["Trujillo", "Tocoa", "Sonaguera"],
-  "Ocotepeque": ["Ocotepeque", "Sensenti", "La Labor"],
-  "Lempira": ["Gracias", "Erandique", "Lepaera"],
-  "Intibucá": ["La Esperanza", "Intibucá", "Yamaranguila"],
-  "La Paz": ["La Paz", "Marcala", "Santa Elena"],
-  "Valle": ["Nacaome", "San Lorenzo", "Amapala"],
-  "Islas de la Bahía": ["Roatán", "Utila", "Guanaja"],
-  "Gracias a Dios": ["Puerto Lempira", "Brus Laguna"],
-};
 
 function parseApiError(data: any): string {
   if (!data) return "Error desconocido";
