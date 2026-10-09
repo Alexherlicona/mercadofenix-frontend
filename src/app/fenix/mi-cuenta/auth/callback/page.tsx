@@ -1,198 +1,151 @@
-// src/app/fenix/mi-cuenta/auth/callback/page.tsx
 "use client";
 
-import { Suspense, useEffect, useState, useRef } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// Nivel de módulo: un code de Google solo se puede canjear UNA vez.
+// Esto evita la doble petición de React StrictMode.
+const pendientes = new Map<string, Promise<any>>();
+
+function canjearCode(code: string) {
+  if (!pendientes.has(code)) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30_000);
+
+    const p = fetch(`${API}/api/auth/google/callback?code=${encodeURIComponent(code)}`, {
+      signal: controller.signal,
+    })
+      .then(async (r) => {
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(data.detail || "Error al autenticar");
+        return data;
+      })
+      .catch((err) => {
+        if (err.name === "AbortError") throw new Error("TIMEOUT");
+        throw err;
+      })
+      .finally(() => clearTimeout(timer));
+
+    pendientes.set(code, p);
+  }
+  return pendientes.get(code)!;
+}
+
 function GoogleCallbackContent() {
   const router = useRouter();
   const [estado, setEstado] = useState<"cargando" | "exito" | "error">("cargando");
   const [mensaje, setMensaje] = useState("");
-  const [esNuevo, setEsNuevo] = useState(false);
-  const ran = useRef(false);
 
-  useEffect(() => {
-  if (ran.current) return;
-  ran.current = true;
-
-  const search = new URLSearchParams(window.location.search);
-  const code  = search.get("code");
-  const error = search.get("error");
-  const next  = search.get("next") || "/fenix/mi-cuenta";
-
-    // Dentro de GoogleCallbackContent (puedes borrar `const ran = useRef(false)`)
   useEffect(() => {
     const search = new URLSearchParams(window.location.search);
-    const code  = search.get("code");
+    const code = search.get("code");
     const error = search.get("error");
-    const next  = search.get("next") || "/fenix/mi-cuenta";
+    const next = search.get("next") || "/fenix/mi-cuenta";
 
     if (error) {
       setEstado("error");
-      setMensaje(error === "access_denied"
-        ? "Cancelaste el inicio de sesión con Google."
-        : "Google no pudo completar el proceso. Intenta de nuevo.");
+      setMensaje(
+        error === "access_denied"
+          ? "Cancelaste el inicio de sesión con Google."
+          : "Google no pudo completar el proceso. Intenta de nuevo."
+      );
       return;
     }
 
     if (!code) {
       if (localStorage.getItem("access_token")) router.replace(next);
-      else { setEstado("error"); setMensaje("Google no pudo completar el proceso. Intenta de nuevo."); }
+      else {
+        setEstado("error");
+        setMensaje("Google no pudo completar el proceso. Intenta de nuevo.");
+      }
       return;
     }
 
     let vivo = true;
     canjearCode(code)
-      .then(data => {
+      .then((data) => {
         localStorage.setItem("access_token", data.access_token);
         if (data.user) {
-          localStorage.setItem("cliente_nombre", `${data.user.nombres || ""} ${data.user.apellidos || ""}`.trim());
+          localStorage.setItem(
+            "cliente_nombre",
+            `${data.user.nombres || ""} ${data.user.apellidos || ""}`.trim()
+          );
           localStorage.setItem("cliente_id", String(data.user.id));
           if (data.user.avatar_url) localStorage.setItem("cliente_avatar", data.user.avatar_url);
         }
         if (!vivo) return;
         setEstado("exito");
-        setEsNuevo(!!data.user?.es_nuevo);
-        setTimeout(() => {
-          router.replace(data.user?.es_nuevo ? "/fenix/mi-cuenta/completar-perfil" : next);
-        }, 1200);
+        // Siempre vamos a `next`; mi-cuenta sugiere completar el perfil con un aviso
+        setTimeout(() => router.replace(next), 1000);
       })
-      .catch(err => {
+      .catch((err) => {
         console.error("Callback Google falló:", err);
         if (!vivo) return;
         setEstado("error");
-        setMensaje(err.message === "TIMEOUT"
-          ? "El servidor tardó demasiado en responder. Intenta de nuevo."
-          : err.message || "Error al conectar con el servidor");
+        setMensaje(
+          err.message === "TIMEOUT"
+            ? "El servidor tardó demasiado en responder. Intenta de nuevo."
+            : err.message || "Error al conectar con el servidor"
+        );
       });
 
-    return () => { vivo = false; };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => {
+      vivo = false;
+    };
+  }, [router]);
 
-  if (!code) {
-    // Sin code pero con sesión ya guardada: no es un error, seguimos
-    if (localStorage.getItem("access_token")) {
-      router.replace(next);
-      return;
-    }
-    setEstado("error");
-    setMensaje("Google no pudo completar el proceso. Intenta de nuevo.");
-    return;
-  }
-
-  // Un code de Google solo se puede usar una vez: evita doble petición
-  if (sessionStorage.getItem("google_code_used") === code) return;
-  sessionStorage.setItem("google_code_used", code);
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30_000);
-
-    fetch(`${API}/api/auth/google/callback?code=${encodeURIComponent(code)}`, {
-      signal: controller.signal,
-    })
-      .then(async r => {
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.detail || "Error al autenticar");
-        return data;
-      })
-      .then(data => {
-        localStorage.setItem("access_token", data.access_token);
-        if (data.user) {
-          const nombre = `${data.user.nombres || ""} ${data.user.apellidos || ""}`.trim();
-          localStorage.setItem("cliente_nombre", nombre);
-          localStorage.setItem("cliente_id", String(data.user.id));
-          if (data.user.avatar_url) {
-            localStorage.setItem("cliente_avatar", data.user.avatar_url);
-          }
-        }
-        setEstado("exito");
-        setEsNuevo(!!data.user?.es_nuevo);
-        clearTimeout(timeoutId);
-
-        const next = new URLSearchParams(window.location.search).get("next") || "/fenix/mi-cuenta";
-        setTimeout(() => {
-          if (data.user?.es_nuevo) {
-            router.replace("/fenix/mi-cuenta/completar-perfil");
-          } else {
-            router.replace(next);
-          }
-        }, 1200);
-      })
-      .catch(err => {
-        console.error("Callback Google falló:", err);   // ← nueva
-        clearTimeout(timeoutId);
-        setEstado("error");
-        setMensaje(err.name === "AbortError"
-          ? "El servidor tardó demasiado en responder. Intenta de nuevo."
-          : err.message || "Error al conectar con el servidor");
-      });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Fuera del componente, a nivel de módulo
-const pendientes = new Map<string, Promise<any>>();
-
-function canjearCode(code: string) {
-  if (!pendientes.has(code)) {
-    const p = Promise.race([
-      fetch(`${API}/api/auth/google/callback?code=${encodeURIComponent(code)}`)
-        .then(async r => {
-          const data = await r.json().catch(() => ({}));
-          if (!r.ok) throw new Error(data.detail || "Error al autenticar");
-          return data;
-        }),
-      new Promise((_, rej) => setTimeout(() => rej(new Error("TIMEOUT")), 30_000)),
-    ]);
-    pendientes.set(code, p);
-  }
-  return pendientes.get(code)!;
-}
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
-      
-      <div className="text-center space-y-4 max-w-sm w-full">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl shadow-xl p-10 text-center space-y-5 max-w-sm w-full">
         {estado === "cargando" && (
           <>
-            <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto">
-              <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+            <div className="relative w-20 h-20 mx-auto">
+              <span className="absolute inset-0 rounded-full bg-orange-200 animate-ping opacity-60" />
+              <div className="relative w-20 h-20 rounded-full bg-orange-50 border-2 border-orange-100 flex items-center justify-center">
+                <Loader2 className="w-9 h-9 text-orange-600 animate-spin" />
+              </div>
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">Verificando tu cuenta</h2>
-              <p className="text-gray-500 text-sm mt-1">Conectando con Google...</p>
+              <h2 className="text-xl font-black text-gray-900">Iniciando sesión</h2>
+              <p className="text-gray-500 text-sm mt-1 flex items-center justify-center gap-1">
+                Conectando con Google
+                <span className="inline-flex gap-0.5">
+                  <span className="w-1 h-1 bg-orange-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                  <span className="w-1 h-1 bg-orange-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                  <span className="w-1 h-1 bg-orange-500 rounded-full animate-bounce" />
+                </span>
+              </p>
             </div>
           </>
         )}
 
         {estado === "exito" && (
           <>
-            <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+            <div className="w-20 h-20 bg-emerald-50 border-2 border-emerald-100 rounded-full flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-10 h-10 text-emerald-500" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">
-                {esNuevo ? "¡Bienvenido a Mercado Fénix!" : "¡Sesión iniciada!"}
-              </h2>
-              <p className="text-gray-500 text-sm mt-1">
-                {esNuevo ? "Completando tu perfil..." : "Redirigiendo..."}
-              </p>
+              <h2 className="text-xl font-black text-gray-900">¡Sesión iniciada!</h2>
+              <p className="text-gray-500 text-sm mt-1">Redirigiendo...</p>
             </div>
           </>
         )}
 
         {estado === "error" && (
           <>
-            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto">
-              <AlertCircle className="w-8 h-8 text-red-400" />
+            <div className="w-20 h-20 bg-red-50 border-2 border-red-100 rounded-full flex items-center justify-center mx-auto">
+              <AlertCircle className="w-10 h-10 text-red-500" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">No se pudo iniciar sesión</h2>
-              <p className="text-gray-400 text-sm mt-1">{mensaje}</p>
+              <h2 className="text-xl font-black text-gray-900">No se pudo iniciar sesión</h2>
+              <p className="text-gray-600 text-sm mt-1">{mensaje}</p>
             </div>
             <button
               onClick={() => router.push("/fenix/mi-cuenta/login")}
-              className="w-full py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-2xl text-sm transition"
+              className="w-full py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold rounded-2xl text-sm shadow-lg hover:shadow-xl transition"
             >
               Volver al inicio de sesión
             </button>
@@ -207,8 +160,8 @@ export default function GoogleCallbackPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
-          <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-orange-600 animate-spin" />
         </div>
       }
     >
