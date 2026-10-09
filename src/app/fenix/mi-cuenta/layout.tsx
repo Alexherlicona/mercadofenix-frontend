@@ -12,6 +12,7 @@ const RUTAS_PUBLICAS = [
   "/fenix/mi-cuenta/login",
   "/fenix/mi-cuenta/registro",
   "/fenix/mi-cuenta/recuperar",
+  "/fenix/mi-cuenta/auth", 
 ];
 
 export default function MiCuentaLayout({ children }: { children: React.ReactNode }) {
