@@ -21,40 +21,34 @@ export default function MiCuentaPage() {
   const checkLoginStatus = async () => {
     const token = localStorage.getItem("access_token");
     if (!token) {
-      console.log("No token found in localStorage");
       setLoading(false);
       return;
     }
-
     try {
       const res = await fetch(`${API_URL}/api/auth/me`, {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-        credentials: "include",
+        headers: { Authorization: `Bearer ${token}` },
+        // sin credentials: "include"
       });
-
-      console.log("Response status for /me:", res.status);
-
       if (res.ok) {
-        const data = await res.json();
-        console.log("User data from /me:", data);
-        setUser(data);
+        setUser(await res.json());
         setIsLoggedIn(true);
-      } else {
-        console.error("Invalid token or expired. Status:", res.status);
+      } else if (res.status === 401) {
+        // Solo aquí el token realmente es inválido o expiró
         localStorage.removeItem("access_token");
       }
+      // 500/502/etc.: el token se conserva
     } catch (err) {
+      // Error de red o CORS: el token se conserva
       console.error("Error fetching /me:", err);
-      localStorage.removeItem("access_token");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogout = async () => {
-    localStorage.removeItem("access_token");
+  const handleLogout = () => {
+    ["access_token", "cliente_nombre", "cliente_id", "cliente_avatar"].forEach((k) =>
+      localStorage.removeItem(k)
+    );
     setIsLoggedIn(false);
     setUser(null);
   };
@@ -68,6 +62,8 @@ export default function MiCuentaPage() {
       </div>
     );
   }
+  const perfilIncompleto =
+    user && (!user.telefono || !user.departamento || !user.municipio || !user.direccion_exacta);
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16 lg:pt-[84px] pb-32 lg:pb-12">
@@ -139,6 +135,18 @@ export default function MiCuentaPage() {
 
             {/* Menú de opciones personales — móvil: columna única debajo del perfil.
                 Desktop: columna derecha, junto al perfil sticky */}
+            {perfilIncompleto && (
+              <Link
+                href="/fenix/mi-cuenta/completar-perfil"
+                className="flex items-center justify-between bg-orange-50 border-2 border-orange-200 rounded-3xl p-5 mb-3 hover:bg-orange-100 transition"
+              >
+                <div>
+                  <p className="font-black text-orange-700">Termina de configurar tu cuenta</p>
+                  <p className="text-sm text-orange-600">Agrega tu teléfono y dirección para tus pedidos</p>
+                </div>
+                <ChevronRight className="w-6 h-6 text-orange-400" />
+              </Link>
+            )}
             <div className="space-y-3 lg:space-y-3">
               <Link
                 href="/fenix/mi-cuenta/perfil"
