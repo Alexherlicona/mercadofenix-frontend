@@ -82,7 +82,7 @@ export default function SolicitudesPendientes() {
   useEffect(() => { cargar(); }, []);
 
   const aprobar = async (dni: string, nombre: string) => {
-    if (!confirm(`¿Aprobar la tienda "${nombre}"?\n\nSe activará con 1 mes gratis.`)) return;
+    if (!confirm(`¿Aprobar la tienda "${nombre}"?\n\nSe activará con 3 mes gratis.`)) return;
     setProcesando(dni);
     try {
       const res = await fetch(`${API}/api/admin/aprobar-vendedor`, {
@@ -143,7 +143,7 @@ export default function SolicitudesPendientes() {
         <div className="flex items-start gap-3 bg-blue-950/40 border border-blue-500/20 rounded-2xl px-5 py-3.5">
           <ShieldCheck className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-blue-300/80 leading-relaxed">
-            Revisa el documento de identidad de cada solicitante antes de aprobar. Al aprobar se activa la tienda con 1 mes de prueba gratis.
+            Revisa el documento de identidad de cada solicitante antes de aprobar. Al aprobar se activa la tienda con 3 meses de prueba gratis.
           </p>
         </div>
 
@@ -232,7 +232,7 @@ export default function SolicitudesPendientes() {
                     disabled={procesando === s.dni}
                     className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-xs transition">
                     {procesando === s.dni ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
-                    Aprobar + 1 mes
+                    Aprobar + 3 meses
                   </button>
                   <button onClick={() => rechazar(s.dni)}
                     disabled={procesando === s.dni}
