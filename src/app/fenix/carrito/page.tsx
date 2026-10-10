@@ -139,6 +139,15 @@ export default function CarritoPage() {
     finally { setEliminandoItems(prev => { const s = new Set(prev); s.delete(id); return s; }); }
   };
 
+  const irAlPago = () => {
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      router.push(`/fenix/mi-cuenta/login?next=${encodeURIComponent("/fenix/carrito/checkout")}`);
+      return;
+    }
+    router.push("/fenix/carrito/checkout");
+  };
+
   // ── LOADING ──────────────────────────────────────────────────────────────────
   if (loading) return (
     <div className="mf-body-pad min-h-screen bg-gray-50 flex items-center justify-center">
@@ -318,7 +327,7 @@ export default function CarritoPage() {
             </div>
 
             <button
-              onClick={() => router.push("/fenix/carrito/checkout")}
+              onClick={irAlPago}
               className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-4 rounded-2xl font-bold text-base shadow-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
               <ShoppingBag className="w-5 h-5" />
               Proceder al pago
@@ -338,7 +347,7 @@ export default function CarritoPage() {
           Usamos bottom-[72px] para quedar justo encima de él con 8px de margen. ── */}
       <div className="lg:hidden fixed bottom-[72px] left-4 right-4 z-40">
         <button
-          onClick={() => router.push("/fenix/carrito/checkout")}
+          onClick={irAlPago}
           className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700
             text-white rounded-2xl shadow-xl shadow-emerald-900/25 active:scale-[0.98] transition-all
             flex items-center px-5 py-3.5 gap-3">
