@@ -1,13 +1,17 @@
 // src/lib/AddToCart.ts
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+import { getCartSessionId } from "./cartSession";
+
 function authHeaders(): HeadersInit {
   const token = localStorage.getItem("access_token");
-  const headers: HeadersInit = { "Content-Type": "application/json" };
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "X-Cart-Session": getCartSessionId(),
+  };
   if (token) headers["Authorization"] = `Bearer ${token}`;
   return headers;
 }
-
 export type AddToCartResultado =
   | { ok: true; total_items: number }
   | { ok: false; razon: "sin_stock" | "limite_stock" | "error_red" | "error_servidor"; mensaje: string; disponibles?: number };
@@ -21,6 +25,7 @@ async function consultarStock(productoId: string): Promise<{ stock: number | nul
     const res = await fetch(`${API_URL}/api/public/producto/${productoId}/stock`);
     if (!res.ok) return null;
     const data = await res.json();
+    if (data.session_id) localStorage.setItem("cart_session", data.session_id);
     return { stock: data.stock, ilimitado: data.ilimitado };
   } catch {
     return null;
