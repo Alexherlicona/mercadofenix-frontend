@@ -11,6 +11,7 @@ import {
   CheckCircle2, Loader2, AlertCircle, Plus, X,
   ShoppingBag, User, Lock, Phone, Package
 } from "lucide-react";
+import { getCartSessionId } from "@/lib/cartSession";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -224,7 +225,8 @@ export default function CheckoutPage() {
         // Cargar carrito — token obligatorio para encontrar el carrito del usuario autenticado
         const resCarrito = await fetch(`${API_URL}/api/carrito/mi-carrito`, {
           credentials: "include",
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          headers: token ? { Authorization: `Bearer ${token}`, "X-Cart-Session": getCartSessionId() } : {},
+          
         });
         if (resCarrito.ok) {
           const dataCarrito = await resCarrito.json();
