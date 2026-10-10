@@ -9,10 +9,13 @@ import { Trash2, Plus, Minus, ArrowLeft, Package, ShoppingBag, Loader2, X, Chevr
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+import { getCartSessionId } from "@/lib/cartSession";
+
 function cartFetch(path: string, options: RequestInit = {}) {
   const token = localStorage.getItem("access_token");
   const headers: HeadersInit = {
     "Content-Type": "application/json",
+    "X-Cart-Session": getCartSessionId(),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   };
