@@ -42,8 +42,9 @@ export default function ClienteLoginPage() {
     const token = localStorage.getItem("access_token");
     if (!token) return;
     fetch(`${API}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => { if (r.ok) router.replace("/fenix/mi-cuenta"); })
-      .catch(() => {});
+      const next = new URLSearchParams(window.location.search).get("next");
+      if (next) sessionStorage.setItem("login_next", next);
+      else sessionStorage.removeItem("login_next");
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLogin = async (e: React.FormEvent) => {
