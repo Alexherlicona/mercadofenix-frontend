@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { fusionarCarrito } from "@/lib/FusionarCarrito";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -21,6 +22,20 @@ function canjearCode(code: string) {
       .then(async (r) => {
         const data = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(data.detail || "Error al autenticar");
+        return data;
+      })
+      .then(async (data) => {
+        // Una sola vez por code: guardar sesión y pasar el carrito de invitado al usuario
+        localStorage.setItem("access_token", data.access_token);
+        if (data.user) {
+          localStorage.setItem(
+            "cliente_nombre",
+            `${data.user.nombres || ""} ${data.user.apellidos || ""}`.trim()
+          );
+          localStorage.setItem("cliente_id", String(data.user.id));
+          if (data.user.avatar_url) localStorage.setItem("cliente_avatar", data.user.avatar_url);
+        }
+        await fusionarCarrito();
         return data;
       })
       .catch((err) => {
@@ -43,7 +58,7 @@ function GoogleCallbackContent() {
     const search = new URLSearchParams(window.location.search);
     const code = search.get("code");
     const error = search.get("error");
-    const next = search.get("next") || "/fenix/mi-cuenta";
+    const next = search.get("next") || sessionStorage.getItem("login_next") || "/fenix/mi-cuenta";
 
     if (error) {
       setEstado("error");
@@ -66,19 +81,10 @@ function GoogleCallbackContent() {
 
     let vivo = true;
     canjearCode(code)
-      .then((data) => {
-        localStorage.setItem("access_token", data.access_token);
-        if (data.user) {
-          localStorage.setItem(
-            "cliente_nombre",
-            `${data.user.nombres || ""} ${data.user.apellidos || ""}`.trim()
-          );
-          localStorage.setItem("cliente_id", String(data.user.id));
-          if (data.user.avatar_url) localStorage.setItem("cliente_avatar", data.user.avatar_url);
-        }
+      .then(() => {
         if (!vivo) return;
+        sessionStorage.removeItem("login_next");
         setEstado("exito");
-        // Siempre vamos a `next`; mi-cuenta sugiere completar el perfil con un aviso
         setTimeout(() => router.replace(next), 1000);
       })
       .catch((err) => {
