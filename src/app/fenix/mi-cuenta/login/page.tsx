@@ -7,6 +7,8 @@ import { Phone, Lock, Eye, EyeOff, LogIn, Loader2, AlertCircle } from "lucide-re
 import { usePathname } from "next/navigation";
 import CartIcon from "@/components/ui/CartIcon";
 import Link from "next/link";
+import { fusionarCarrito } from "@/lib/FusionarCarrito";
+import { safeNext } from "@/lib/safeNext";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -42,10 +44,14 @@ export default function ClienteLoginPage() {
     const token = localStorage.getItem("access_token");
     if (!token) return;
     fetch(`${API}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
-      const next = new URLSearchParams(window.location.search).get("next");
-      if (next) sessionStorage.setItem("login_next", next);
-      else sessionStorage.removeItem("login_next");
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+      .then((r) => {
+        if (r.ok) {
+          const next = new URLSearchParams(window.location.search).get("next");
+          router.replace(safeNext(next));
+        }
+      })
+      .catch(() => {});
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,10 +69,20 @@ export default function ClienteLoginPage() {
         localStorage.setItem("cliente_nombre", `${data.user.nombres || ""} ${data.user.apellidos || ""}`.trim());
         localStorage.setItem("cliente_id", String(data.user.id));
       }
-      router.push("/fenix/mi-cuenta");
+      await fusionarCarrito();
+      const next = new URLSearchParams(window.location.search).get("next");
+      router.push(safeNext(next));
     } catch {
       setError("Sin conexión. Verifica tu internet.");
     } finally { setLoading(false); }
+  };
+  
+  const iniciarConGoogle = () => {
+    // Google pierde ?next= en el viaje; lo guardamos para que el callback lo recupere
+    const next = safeNext(new URLSearchParams(window.location.search).get("next"), "");
+    if (next) sessionStorage.setItem("login_next", next);
+    else sessionStorage.removeItem("login_next");
+    window.location.href = `${API}/api/auth/google`;
   };
 
   return (
@@ -115,7 +131,7 @@ export default function ClienteLoginPage() {
 
           {/* Google */}
           <button
-            onClick={() => { window.location.href = `${API}/api/auth/google`; }}
+            onClick={iniciarConGoogle}
             type="button"
             className="w-full flex items-center justify-center gap-3 py-3 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-sm border border-gray-200 shadow-sm hover:shadow transition-all mb-5"
           >
@@ -179,7 +195,10 @@ export default function ClienteLoginPage() {
 
           <div className="text-center mt-5 space-y-1.5">
             <p className="text-gray-400 text-xs">¿No tienes cuenta?</p>
-            <button onClick={() => router.push("/fenix/mi-cuenta/registro")}
+            <button onClick={() => {
+                const next = safeNext(new URLSearchParams(window.location.search).get("next"), "");
+                router.push(`/fenix/mi-cuenta/registro${next ? `?redirect=${encodeURIComponent(next)}` : ""}`);
+              }}
               className="text-orange-500 text-sm font-bold hover:text-orange-600 transition">
               Crear cuenta gratis
             </button>
