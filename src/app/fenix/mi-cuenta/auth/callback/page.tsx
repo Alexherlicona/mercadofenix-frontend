@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { fusionarCarrito } from "@/lib/FusionarCarrito";
+import { safeNext } from "@/lib/safeNext";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -58,7 +59,7 @@ function GoogleCallbackContent() {
     const search = new URLSearchParams(window.location.search);
     const code = search.get("code");
     const error = search.get("error");
-    const next = search.get("next") || sessionStorage.getItem("login_next") || "/fenix/mi-cuenta";
+    const next = safeNext(search.get("next") || sessionStorage.getItem("login_next"));
 
     if (error) {
       setEstado("error");
