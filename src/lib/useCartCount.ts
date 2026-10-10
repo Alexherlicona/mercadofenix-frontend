@@ -1,5 +1,6 @@
 // src/lib/useCartCount.ts
 import { useState, useEffect } from "react";
+import { getCartSessionId } from "./cartSession";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -10,7 +11,8 @@ export function useCartCount() {
     try {
       const token = localStorage.getItem("access_token");
       const headers: HeadersInit = {};
-      if (token) headers["Authorization"] = `Bearer ${token}`;
+      if (token) headers["Authorization"] = `Bearer ${token}` ;
+      headers["X-Cart-Session"] = getCartSessionId();
 
       const res = await fetch(`${API_URL}/api/carrito/mi-carrito`, {
         credentials: "include",
