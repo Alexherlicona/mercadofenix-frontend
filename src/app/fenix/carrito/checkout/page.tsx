@@ -50,11 +50,18 @@ interface ClienteInfo {
   id: number;
   nombres: string;
   apellidos: string;
-  telefono: string;
+  telefono: string | null;
   email: string | null;
   departamento: string | null;
   municipio: string | null;
   direccion_exacta: string | null;
+}
+
+interface OpcionesCheckout {
+  pago: string[];
+  entrega: string[];
+  tiendas: { nombre: string; pago: string[]; entrega: string[] }[];
+  conflicto_pago: boolean;
 }
 
 type TipoEntrega = "domicilio" | "tienda" | "oficina_fenix";
@@ -188,9 +195,12 @@ export default function CheckoutPage() {
   // Selecciones del checkout
   const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>("domicilio");
   const [metodoPago, setMetodoPago] = useState<MetodoPago>("");
-  const [direccionSeleccionada, setDireccionSeleccionada] = useState<number | null>(null);
-  const [direccionAlternativa, setDireccionAlternativa] = useState("");
-  const [usarNuevaDireccion, setUsarNuevaDireccion] = useState(false);
+  const [opciones, setOpciones] = useState<OpcionesCheckout | null>(null);
+  const [perfilForm, setPerfilForm] = useState({ telefono: "", departamento: "", municipio: "", direccion_exacta: "" });
+  const [otraDireccion, setOtraDireccion] = useState(false);
+  const [direccionOtraTexto, setDireccionOtraTexto] = useState("");
+  const [guardandoPerfil, setGuardandoPerfil] = useState(false);
+  const [errorPerfil, setErrorPerfil] = useState("");
   const [notaCliente, setNotaCliente] = useState("");
 
   // Formulario nueva dirección
@@ -240,27 +250,17 @@ export default function CheckoutPage() {
 
         // Cargar cliente si está autenticado
         if (token) {
-          const resCliente = await fetch(`${API_URL}/api/auth/me`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (resCliente.ok) {
-            const dataCliente = await resCliente.json();
-            setCliente(dataCliente);
-
-            // Cargar direcciones guardadas
-            const resDirs = await fetch(`${API_URL}/api/direcciones/`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            if (resDirs.ok) {
-              const dataDirs = await resDirs.json();
-              const dirs: Direccion[] = dataDirs.direcciones || [];
-              setDirecciones(dirs);
-              // Pre-seleccionar la principal
-              const principal = dirs.find((d) => d.es_principal);
-              if (principal) setDireccionSeleccionada(principal.id);
-              else if (dirs.length > 0) setDireccionSeleccionada(dirs[0].id);
-            }
+          const headers = { Authorization: `Bearer ${token}`, "X-Cart-Session": getCartSessionId() };
+          const [resCliente, resOpc] = await Promise.all([
+            fetch(`${API_URL}/api/auth/me`, { headers }),
+            fetch(`${API_URL}/api/carrito/opciones-checkout`, { credentials: "include", headers }),
+          ]);
+          if (resCliente.status === 401) {
+            router.replace(`/fenix/mi-cuenta/login?next=${encodeURIComponent("/fenix/carrito/checkout")}`);
+            return;
           }
+          if (resCliente.ok) setCliente(await resCliente.json());
+          if (resOpc.ok) setOpciones(await resOpc.json());
         }
       } catch (err) {
         console.error("Error en init checkout:", err);
@@ -279,15 +279,94 @@ export default function CheckoutPage() {
   }, [nuevaDirForm.departamento]);
 
   // ── Validaciones por paso ───────────────────────────────────────────────────
-  const paso1Valido = useMemo(() => {
-    if (tipoEntrega !== "domicilio") return true;
-    if (!usarNuevaDireccion && direccionSeleccionada) return true;
-    if (usarNuevaDireccion && nuevaDirForm.departamento && nuevaDirForm.municipio && nuevaDirForm.direccion_exacta) return true;
-    if (direcciones.length === 0 && nuevaDirForm.departamento && nuevaDirForm.municipio && nuevaDirForm.direccion_exacta) return true;
-    return false;
-  }, [tipoEntrega, usarNuevaDireccion, direccionSeleccionada, nuevaDirForm, direcciones.length]);
+  // ── Datos que faltan (típico de cuentas creadas con Google) ────────────────
+  const necesitaTelefono = !!cliente && !cliente.telefono;
+  const necesitaUbicacion =
+    !!cliente && tipoEntrega === "domicilio" && !otraDireccion &&
+    (!cliente.departamento || !cliente.municipio || !cliente.direccion_exacta);
+  const necesitaCompletar = necesitaTelefono || necesitaUbicacion;
+  const municipiosPerfil = HONDURAS_LOCATIONS[perfilForm.departamento] || [];
 
-  const paso2Valido = metodoPago !== "";
+  const perfilFormValido =
+    (!necesitaTelefono || perfilForm.telefono.length === 8) &&
+    (!necesitaUbicacion ||
+      (!!perfilForm.departamento && !!perfilForm.municipio && !!perfilForm.direccion_exacta.trim()));
+
+  // ── Opciones permitidas por los vendedores del carrito ─────────────────────
+  const entregaDisponible = useMemo(
+    () => ENTREGA_OPCIONES.filter((o) => !opciones || opciones.entrega.includes(o.id)),
+    [opciones]
+  );
+  const pagoDisponible = useMemo(
+    () => PAGO_OPCIONES.filter((o) => !opciones || opciones.pago.includes(o.id)),
+    [opciones]
+  );
+
+  useEffect(() => {
+    if (!opciones) return;
+    if (entregaDisponible.length && !entregaDisponible.some((o) => o.id === tipoEntrega)) {
+      setTipoEntrega(entregaDisponible[0].id);
+    }
+    if (pagoDisponible.length === 1) setMetodoPago(pagoDisponible[0].id);
+    else if (metodoPago && !pagoDisponible.some((o) => o.id === metodoPago)) setMetodoPago("");
+  }, [opciones, entregaDisponible, pagoDisponible]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const paso1Valido = useMemo(() => {
+    if (necesitaCompletar && !perfilFormValido) return false;
+    if (tipoEntrega === "domicilio" && otraDireccion && !direccionOtraTexto.trim()) return false;
+    return true;
+  }, [necesitaCompletar, perfilFormValido, tipoEntrega, otraDireccion, direccionOtraTexto]);
+
+  const paso2Valido = metodoPago !== "" && !opciones?.conflicto_pago;
+
+  // ── Guardar solo los datos que faltan ──────────────────────────────────────
+  const guardarPerfilFaltante = async (): Promise<boolean> => {
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      router.replace(`/fenix/mi-cuenta/login?next=${encodeURIComponent("/fenix/carrito/checkout")}`);
+      return false;
+    }
+    const payload: Record<string, string> = {};
+    if (necesitaTelefono) payload.telefono = perfilForm.telefono;
+    if (necesitaUbicacion) {
+      payload.departamento = perfilForm.departamento;
+      payload.municipio = perfilForm.municipio;
+      payload.direccion_exacta = perfilForm.direccion_exacta.trim();
+    }
+    setGuardandoPerfil(true);
+    setErrorPerfil("");
+    try {
+      const res = await fetch(`${API_URL}/api/auth/perfil`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        router.replace(`/fenix/mi-cuenta/login?next=${encodeURIComponent("/fenix/carrito/checkout")}`);
+        return false;
+      }
+      if (!res.ok) {
+        setErrorPerfil(typeof data.detail === "string" ? data.detail : "No se pudieron guardar tus datos");
+        return false;
+      }
+      setCliente((prev) => (prev ? { ...prev, ...data.user } : prev));
+      return true;
+    } catch {
+      setErrorPerfil("No se pudo conectar con el servidor. Intenta de nuevo.");
+      return false;
+    } finally {
+      setGuardandoPerfil(false);
+    }
+  };
+
+  const continuar = async () => {
+    if (paso === 1 && necesitaCompletar) {
+      const ok = await guardarPerfilFaltante();
+      if (!ok) return;
+    }
+    setPaso((paso + 1) as 1 | 2 | 3);
+  };
 
   // ── Crear pedido ────────────────────────────────────────────────────────────
   const crearPedido = async () => {
@@ -299,40 +378,14 @@ export default function CheckoutPage() {
 
     try {
       // Guardar nueva dirección si aplica
-      let dirIdFinal: number | null = direccionSeleccionada;
-      let dirAltFinal: string | null = null;
-
-      if (tipoEntrega === "domicilio" && (usarNuevaDireccion || direcciones.length === 0)) {
-        if (nuevaDirForm.guardar) {
-          // Guardar en la cuenta del cliente
-          const resSave = await fetch(`${API_URL}/api/direcciones/crear`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              nombre_direccion: nuevaDirForm.nombre_direccion,
-              departamento: nuevaDirForm.departamento,
-              municipio: nuevaDirForm.municipio,
-              direccion_exacta: nuevaDirForm.direccion_exacta,
-              referencia: nuevaDirForm.referencia || null,
-              telefono_contacto: nuevaDirForm.telefono_contacto || null,
-              es_principal: false,
-            }),
-          });
-          if (resSave.ok) {
-            const dataSave = await resSave.json();
-            dirIdFinal = dataSave.id;
-          }
+      let dirAltFinal: string | null;
+        if (tipoEntrega === "domicilio") {
+          dirAltFinal = otraDireccion
+            ? direccionOtraTexto.trim()
+            : `${cliente.departamento}, ${cliente.municipio} — ${cliente.direccion_exacta}`;
         } else {
-          // Dirección one-time
-          dirAltFinal = `${nuevaDirForm.departamento}, ${nuevaDirForm.municipio} — ${nuevaDirForm.direccion_exacta}`;
+          dirAltFinal = tipoEntrega === "tienda" ? "Retiro en tienda del vendedor" : "Oficina Mercado Fénix";
         }
-      } else if (tipoEntrega !== "domicilio") {
-        dirAltFinal =
-          tipoEntrega === "tienda" ? "Retiro en tienda del vendedor" : "Oficina Mercado Fénix";
-      }
 
       // Construir items del pedido desde el carrito
       const itemsPedido = items.map((item) => ({
@@ -345,7 +398,7 @@ export default function CheckoutPage() {
       }));
 
       const body = {
-        direccion_id: dirIdFinal,
+        direccion_id: null,
         direccion_alternativa: dirAltFinal,
         items: itemsPedido,
         tipo_entrega: tipoEntrega,
@@ -485,7 +538,7 @@ export default function CheckoutPage() {
 
             <div className="flex flex-col gap-3">
               <Link
-                href={`/fenix/mi-cuenta/login?redirect=/fenix/carrito/checkout`}
+                href={`/fenix/mi-cuenta/login?next=/fenix/carrito/checkout`}
                 className="w-full bg-orange-600 hover:bg-orange-700 text-white py-4 rounded-2xl font-bold text-lg text-center transition-colors"
               >
                 Iniciar sesión
@@ -556,7 +609,11 @@ export default function CheckoutPage() {
                 <p className="text-xs text-gray-500">Comprando como</p>
                 <p className="font-bold text-gray-900 truncate">{cliente.nombres} {cliente.apellidos}</p>
                 <p className="text-xs text-gray-500 flex items-center gap-1">
-                  <Phone className="w-3 h-3 flex-shrink-0" /> {cliente.telefono}
+                  <Phone className="w-3 h-3 flex-shrink-0" /> {cliente.telefono && (
+                    <p className="text-xs text-gray-500 flex items-center gap-1">
+                      <Phone className="w-3 h-3 flex-shrink-0" /> {cliente.telefono}
+                    </p>
+                  )}
                 </p>
               </div>
             </div>
@@ -565,7 +622,7 @@ export default function CheckoutPage() {
             <div>
               <h2 className="font-black text-gray-900 text-base sm:text-lg mb-3">¿Cómo quieres recibir tu pedido?</h2>
               <div className="space-y-2.5">
-                {ENTREGA_OPCIONES.map((op) => {
+                {entregaDisponible.map((op) => {
                   const Icon = op.icon;
                   const activa = tipoEntrega === op.id;
                   return (
@@ -610,92 +667,33 @@ export default function CheckoutPage() {
             </div>
 
             {/* Bloque de dirección — solo si domicilio */}
-            {tipoEntrega === "domicilio" && (
-              <div className="space-y-3">
-                <h2 className="font-black text-gray-900 text-base sm:text-lg">¿A dónde te lo enviamos?</h2>
+            {/* Datos faltantes: solo aparece si la cuenta no tiene lo necesario */}
+            {necesitaCompletar && (
+              <div className="bg-white rounded-2xl border-2 border-orange-200 p-4 space-y-3">
+                <div>
+                  <p className="font-black text-gray-900 text-sm">Completa tus datos</p>
+                  <p className="text-xs text-gray-500">Faltan algunos datos de tu cuenta para poder entregar tu pedido.</p>
+                </div>
 
-                {/* Direcciones guardadas */}
-                {direcciones.length > 0 && !usarNuevaDireccion && (
-                  <div className="space-y-2">
-                    {direcciones.map((dir) => (
-                      <button
-                        key={dir.id}
-                        onClick={() => setDireccionSeleccionada(dir.id)}
-                        className={`w-full text-left p-4 rounded-2xl border-2 transition-all active:scale-[0.99] ${
-                          direccionSeleccionada === dir.id
-                            ? "border-orange-500 bg-orange-50"
-                            : "border-gray-200 bg-white hover:border-gray-300"
-                        }`}
-                      >
-                        <div className="flex items-start gap-3">
-                          <MapPin className={`w-4 h-4 mt-0.5 flex-shrink-0 ${direccionSeleccionada === dir.id ? "text-orange-500" : "text-gray-400"}`} />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className={`font-bold text-sm ${direccionSeleccionada === dir.id ? "text-orange-700" : "text-gray-900"}`}>
-                                {dir.nombre_direccion}
-                              </span>
-                              {dir.es_principal && (
-                                <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full font-medium">Principal</span>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-600 mt-0.5 truncate">{dir.departamento}, {dir.municipio}</p>
-                            <p className="text-xs text-gray-500 truncate">{dir.direccion_exacta}</p>
-                          </div>
-                          <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                            direccionSeleccionada === dir.id ? "border-orange-500" : "border-gray-300"
-                          }`}>
-                            {direccionSeleccionada === dir.id && <div className="w-2.5 h-2.5 rounded-full bg-orange-500" />}
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => { setUsarNuevaDireccion(true); setDireccionSeleccionada(null); }}
-                      className="w-full py-3 border-2 border-dashed border-gray-300 hover:border-orange-400 active:scale-[0.99] rounded-2xl text-gray-600 hover:text-orange-600 font-semibold text-sm flex items-center justify-center gap-2 transition-all"
-                    >
-                      <Plus className="w-4 h-4" /> Usar otra dirección
-                    </button>
+                {necesitaTelefono && (
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 mb-1 block">Teléfono *</label>
+                    <input
+                      type="tel" inputMode="numeric" placeholder="99751480"
+                      value={perfilForm.telefono}
+                      onChange={(e) => setPerfilForm((p) => ({ ...p, telefono: e.target.value.replace(/\D/g, "").slice(0, 8) }))}
+                      className="w-full border-2 border-gray-200 focus:border-orange-400 rounded-xl px-3 py-2.5 text-sm outline-none transition-colors"
+                    />
                   </div>
                 )}
 
-                {/* Formulario nueva dirección */}
-                {(usarNuevaDireccion || direcciones.length === 0) && (
-                  <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
-                    {usarNuevaDireccion && (
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold text-sm text-gray-900">Nueva dirección</span>
-                        <button onClick={() => { setUsarNuevaDireccion(false); setDireccionSeleccionada(direcciones[0]?.id ?? null); }} className="text-gray-400 hover:text-gray-600">
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Nombre de la dirección */}
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 mb-1 block">Nombre de la dirección</label>
-                      <div className="flex gap-2 flex-wrap">
-                        {["Casa", "Trabajo", "Otro"].map((nombre) => (
-                          <button
-                            key={nombre}
-                            onClick={() => setNuevaDirForm(p => ({ ...p, nombre_direccion: nombre }))}
-                            className={`px-4 py-1.5 rounded-full text-sm font-semibold border-2 transition-colors ${
-                              nuevaDirForm.nombre_direccion === nombre
-                                ? "border-orange-500 bg-orange-50 text-orange-700"
-                                : "border-gray-200 text-gray-600 hover:border-gray-300"
-                            }`}
-                          >
-                            {nombre}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Departamento */}
+                {necesitaUbicacion && (
+                  <>
                     <div>
                       <label className="text-xs font-semibold text-gray-600 mb-1 block">Departamento *</label>
                       <select
-                        value={nuevaDirForm.departamento}
-                        onChange={(e) => setNuevaDirForm(p => ({ ...p, departamento: e.target.value }))}
+                        value={perfilForm.departamento}
+                        onChange={(e) => setPerfilForm((p) => ({ ...p, departamento: e.target.value, municipio: "" }))}
                         className="w-full border-2 border-gray-200 focus:border-orange-400 rounded-xl px-3 py-2.5 text-sm outline-none bg-white transition-colors"
                       >
                         <option value="">Selecciona departamento</option>
@@ -704,75 +702,74 @@ export default function CheckoutPage() {
                         ))}
                       </select>
                     </div>
-
-                    {/* Municipio */}
                     <div>
                       <label className="text-xs font-semibold text-gray-600 mb-1 block">Ciudad / Municipio *</label>
                       <select
-                        value={nuevaDirForm.municipio}
-                        onChange={(e) => setNuevaDirForm(p => ({ ...p, municipio: e.target.value }))}
-                        disabled={!nuevaDirForm.departamento}
+                        value={perfilForm.municipio}
+                        onChange={(e) => setPerfilForm((p) => ({ ...p, municipio: e.target.value }))}
+                        disabled={!perfilForm.departamento}
                         className="w-full border-2 border-gray-200 focus:border-orange-400 rounded-xl px-3 py-2.5 text-sm outline-none bg-white disabled:bg-gray-50 disabled:text-gray-400 transition-colors"
                       >
                         <option value="">Selecciona municipio</option>
-                        {municipiosDisponibles.map((mun) => (
+                        {municipiosPerfil.map((mun) => (
                           <option key={mun} value={mun}>{mun}</option>
                         ))}
                       </select>
                     </div>
-
-                    {/* Dirección exacta */}
                     <div>
                       <label className="text-xs font-semibold text-gray-600 mb-1 block">Dirección exacta *</label>
                       <input
-                        type="text"
-                        placeholder="Colonia, calle, número de casa..."
-                        value={nuevaDirForm.direccion_exacta}
-                        onChange={(e) => setNuevaDirForm(p => ({ ...p, direccion_exacta: e.target.value }))}
+                        type="text" placeholder="Colonia, calle, número de casa..."
+                        value={perfilForm.direccion_exacta}
+                        onChange={(e) => setPerfilForm((p) => ({ ...p, direccion_exacta: e.target.value }))}
                         className="w-full border-2 border-gray-200 focus:border-orange-400 rounded-xl px-3 py-2.5 text-sm outline-none transition-colors"
                       />
                     </div>
+                  </>
+                )}
 
-                    {/* Referencia */}
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 mb-1 block">Referencia <span className="font-normal text-gray-400">(opcional)</span></label>
-                      <input
-                        type="text"
-                        placeholder="Frente al parque, casa azul..."
-                        value={nuevaDirForm.referencia}
-                        onChange={(e) => setNuevaDirForm(p => ({ ...p, referencia: e.target.value }))}
-                        className="w-full border-2 border-gray-200 focus:border-orange-400 rounded-xl px-3 py-2.5 text-sm outline-none transition-colors"
-                      />
+                {errorPerfil && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-red-700">{errorPerfil}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Dirección de envío — usa la del perfil, sin volver a pedirla */}
+            {tipoEntrega === "domicilio" && (
+              <div className="space-y-3">
+                <h2 className="font-black text-gray-900 text-base sm:text-lg">¿A dónde te lo enviamos?</h2>
+
+                {!otraDireccion && !necesitaUbicacion && cliente && (
+                  <div className="p-4 rounded-2xl border-2 border-orange-500 bg-orange-50 flex items-start gap-3">
+                    <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-orange-500" />
+                    <div className="min-w-0">
+                      <p className="font-bold text-sm text-orange-700">Mi dirección</p>
+                      <p className="text-xs text-gray-600 mt-0.5">{cliente.municipio}, {cliente.departamento}</p>
+                      <p className="text-xs text-gray-500">{cliente.direccion_exacta}</p>
                     </div>
-
-                    {/* Teléfono de contacto */}
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 mb-1 block">Teléfono de contacto <span className="font-normal text-gray-400">(opcional)</span></label>
-                      <input
-                        type="tel"
-                        placeholder="9999-9999"
-                        value={nuevaDirForm.telefono_contacto}
-                        onChange={(e) => setNuevaDirForm(p => ({ ...p, telefono_contacto: e.target.value }))}
-                        className="w-full border-2 border-gray-200 focus:border-orange-400 rounded-xl px-3 py-2.5 text-sm outline-none transition-colors"
-                      />
-                    </div>
-
-                    {/* Guardar dirección */}
-                    <button
-                      onClick={() => setNuevaDirForm(p => ({ ...p, guardar: !p.guardar }))}
-                      className="flex items-center gap-2 text-sm text-gray-600"
-                    >
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                        nuevaDirForm.guardar ? "bg-orange-500 border-orange-500" : "border-gray-300"
-                      }`}>
-                        {nuevaDirForm.guardar && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
-                      </div>
-                      Guardar esta dirección en mi cuenta
-                    </button>
                   </div>
                 )}
 
-                {/* Info de entrega a domicilio */}
+                {otraDireccion && (
+                  <input
+                    type="text" placeholder="Departamento, ciudad, colonia, calle y número de casa..."
+                    value={direccionOtraTexto}
+                    onChange={(e) => setDireccionOtraTexto(e.target.value)}
+                    className="w-full border-2 border-gray-200 focus:border-orange-400 rounded-xl px-3 py-2.5 text-sm outline-none transition-colors"
+                  />
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setOtraDireccion((v) => !v)}
+                  className="text-sm font-semibold text-orange-600 hover:text-orange-700"
+                >
+                  {otraDireccion ? "Usar mi dirección" : "Enviar a otra dirección"}
+                </button>
+
                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex gap-2">
                   <AlertCircle className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
                   <p className="text-xs text-blue-700">
@@ -810,7 +807,18 @@ export default function CheckoutPage() {
             <h2 className="font-black text-gray-900 text-base sm:text-lg">¿Cómo vas a pagar?</h2>
 
             <div className="space-y-3">
-              {PAGO_OPCIONES.map((op) => {
+              {opciones?.conflicto_pago && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800 space-y-2">
+                  <p className="font-bold">Las tiendas de tu carrito no comparten un método de pago.</p>
+                  {opciones.tiendas.map((t) => (
+                    <p key={t.nombre} className="text-xs">
+                      <span className="font-semibold">{t.nombre}:</span> {t.pago.join(", ")}
+                    </p>
+                  ))}
+                  <p className="text-xs">Compra los productos de cada tienda por separado.</p>
+                </div>
+              )}              
+              {pagoDisponible.map((op) => {
                 const Icon = op.icon;
                 const activa = metodoPago === op.id;
                 return (
@@ -938,14 +946,11 @@ export default function CheckoutPage() {
                   <p className="text-sm font-semibold text-gray-900">
                     {tipoEntrega === "domicilio" ? "A domicilio" : tipoEntrega === "tienda" ? "Retiro en tienda" : "Oficina Mercado Fénix"}
                   </p>
-                  {tipoEntrega === "domicilio" && (() => {
-                    const dir = direcciones.find(d => d.id === direccionSeleccionada);
-                    return dir ? (
-                      <p className="text-xs text-gray-500 truncate">{dir.nombre_direccion} — {dir.municipio}, {dir.departamento}</p>
-                    ) : nuevaDirForm.direccion_exacta ? (
-                      <p className="text-xs text-gray-500 truncate">{nuevaDirForm.municipio}, {nuevaDirForm.departamento}</p>
-                    ) : null;
-                  })()}
+                  {tipoEntrega === "domicilio" && cliente && (
+                    <p className="text-xs text-gray-500 truncate">
+                      {otraDireccion ? direccionOtraTexto : `${cliente.municipio}, ${cliente.departamento}`}
+                    </p>
+                  )}
                 </div>
               </div>
               {/* Pago */}
@@ -1051,8 +1056,8 @@ export default function CheckoutPage() {
             {/* CTA desktop */}
             {paso < 3 ? (
               <button
-                onClick={() => setPaso((paso + 1) as 1 | 2 | 3)}
-                disabled={paso === 1 ? !paso1Valido : paso === 2 ? !paso2Valido : false}
+                onClick={continuar}
+                disabled={guardandoPerfil || (paso === 1 ? !paso1Valido : paso === 2 ? !paso2Valido : false)}
                 className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 transition-all"
               >
                 Continuar
@@ -1115,8 +1120,8 @@ export default function CheckoutPage() {
         <div className="mf-container py-3.5">
           {paso < 3 ? (
             <button
-              onClick={() => setPaso((paso + 1) as 1 | 2 | 3)}
-              disabled={paso === 1 ? !paso1Valido : paso === 2 ? !paso2Valido : false}
+              onClick={continuar}
+              disabled={guardandoPerfil || (paso === 1 ? !paso1Valido : paso === 2 ? !paso2Valido : false)}
               className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3.5 sm:py-4 rounded-2xl font-bold text-base sm:text-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-md shadow-orange-900/10"
             >
               Continuar
