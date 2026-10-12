@@ -7,13 +7,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, MapPin, Truck, Store, Building2,
-  Banknote, CreditCard, ChevronRight, ChevronDown,
-  CheckCircle2, Loader2, AlertCircle, Plus, X,
+  Banknote, CreditCard, ChevronRight,
+  CheckCircle2, Loader2, AlertCircle,
   ShoppingBag, User, Lock, Phone, Package
 } from "lucide-react";
 import { getCartSessionId } from "@/lib/cartSession";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const LOGIN_URL = `/fenix/mi-cuenta/login?next=${encodeURIComponent("/fenix/carrito/checkout")}`;
 
 // ── Helper URL imágenes ───────────────────────────────────────────────────────
 // Evita el bug de armar "${API_URL}undefined" cuando no hay imagen_principal.
@@ -35,17 +36,6 @@ interface CarritoItem {
   talla: string | null;
 }
 
-interface Direccion {
-  id: number;
-  nombre_direccion: string;
-  departamento: string;
-  municipio: string;
-  direccion_exacta: string;
-  referencia: string | null;
-  telefono_contacto: string | null;
-  es_principal: boolean;
-}
-
 interface ClienteInfo {
   id: number;
   nombres: string;
@@ -57,6 +47,7 @@ interface ClienteInfo {
   direccion_exacta: string | null;
 }
 
+// Respuesta de GET /api/carrito/opciones-checkout
 interface OpcionesCheckout {
   pago: string[];
   entrega: string[];
@@ -185,8 +176,9 @@ export default function CheckoutPage() {
   const [paso, setPaso] = useState<1 | 2 | 3>(1); // 1=entrega, 2=pago, 3=resumen
   const [items, setItems] = useState<CarritoItem[]>([]);
   const [cliente, setCliente] = useState<ClienteInfo | null>(null);
-  const [direcciones, setDirecciones] = useState<Direccion[]>([]);
+  const [opciones, setOpciones] = useState<OpcionesCheckout | null>(null);
   const [loadingInicial, setLoadingInicial] = useState(true);
+  const [errorCarga, setErrorCarga] = useState(false);
   const [procesando, setProcesando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pedidoCreado, setPedidoCreado] = useState<number | null>(null);
@@ -195,25 +187,19 @@ export default function CheckoutPage() {
   // Selecciones del checkout
   const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>("domicilio");
   const [metodoPago, setMetodoPago] = useState<MetodoPago>("");
-  const [opciones, setOpciones] = useState<OpcionesCheckout | null>(null);
-  const [perfilForm, setPerfilForm] = useState({ telefono: "", departamento: "", municipio: "", direccion_exacta: "" });
   const [otraDireccion, setOtraDireccion] = useState(false);
   const [direccionOtraTexto, setDireccionOtraTexto] = useState("");
-  const [guardandoPerfil, setGuardandoPerfil] = useState(false);
-  const [errorPerfil, setErrorPerfil] = useState("");
   const [notaCliente, setNotaCliente] = useState("");
 
-  // Formulario nueva dirección
-  const [nuevaDirForm, setNuevaDirForm] = useState({
-    nombre_direccion: "Casa",
+  // Datos que faltan en la cuenta (típico de cuentas creadas con Google)
+  const [perfilForm, setPerfilForm] = useState({
+    telefono: "",
     departamento: "",
     municipio: "",
     direccion_exacta: "",
-    referencia: "",
-    telefono_contacto: "",
-    guardar: true,
   });
-  const [municipiosDisponibles, setMunicipiosDisponibles] = useState<string[]>([]);
+  const [guardandoPerfil, setGuardandoPerfil] = useState(false);
+  const [errorPerfil, setErrorPerfil] = useState("");
 
   // ── Cálculos ────────────────────────────────────────────────────────────────
   const subtotal = useMemo(
@@ -231,12 +217,13 @@ export default function CheckoutPage() {
     const init = async () => {
       try {
         const token = localStorage.getItem("access_token");
+        const headers: Record<string, string> = { "X-Cart-Session": getCartSessionId() };
+        if (token) headers.Authorization = `Bearer ${token}`;
 
-        // Cargar carrito — token obligatorio para encontrar el carrito del usuario autenticado
+        // Carrito
         const resCarrito = await fetch(`${API_URL}/api/carrito/mi-carrito`, {
           credentials: "include",
-          headers: token ? { Authorization: `Bearer ${token}`, "X-Cart-Session": getCartSessionId() } : {},
-          
+          headers,
         });
         if (resCarrito.ok) {
           const dataCarrito = await resCarrito.json();
@@ -248,22 +235,27 @@ export default function CheckoutPage() {
           setItems(itemsCargados);
         }
 
-        // Cargar cliente si está autenticado
+        // Cliente y opciones de pago/entrega según los vendedores del carrito
         if (token) {
-          const headers = { Authorization: `Bearer ${token}`, "X-Cart-Session": getCartSessionId() };
           const [resCliente, resOpc] = await Promise.all([
             fetch(`${API_URL}/api/auth/me`, { headers }),
-            fetch(`${API_URL}/api/carrito/opciones-checkout`, { credentials: "include", headers }),
+            fetch(`${API_URL}/api/carrito/opciones-checkout`, { credentials: "include", headers })
+              .catch(() => null), // si falla, el checkout sigue sin filtros
           ]);
+
           if (resCliente.status === 401) {
-            router.replace(`/fenix/mi-cuenta/login?next=${encodeURIComponent("/fenix/carrito/checkout")}`);
+            router.replace(LOGIN_URL);
             return;
           }
           if (resCliente.ok) setCliente(await resCliente.json());
-          if (resOpc.ok) setOpciones(await resOpc.json());
+          else setErrorCarga(true);
+
+          // Si el endpoint falla, se muestran todas las opciones (el servidor valida al crear el pedido)
+          if (resOpc && resOpc.ok) setOpciones(await resOpc.json());
         }
       } catch (err) {
         console.error("Error en init checkout:", err);
+        setErrorCarga(true);
       } finally {
         setLoadingInicial(false);
       }
@@ -271,18 +263,12 @@ export default function CheckoutPage() {
     init();
   }, [router]);
 
-  // Actualizar municipios cuando cambia departamento
-  useEffect(() => {
-    const municipios = HONDURAS_LOCATIONS[nuevaDirForm.departamento] || [];
-    setMunicipiosDisponibles(municipios);
-    setNuevaDirForm((prev) => ({ ...prev, municipio: municipios[0] || "" }));
-  }, [nuevaDirForm.departamento]);
-
-  // ── Validaciones por paso ───────────────────────────────────────────────────
-  // ── Datos que faltan (típico de cuentas creadas con Google) ────────────────
+  // ── Datos que faltan ────────────────────────────────────────────────────────
   const necesitaTelefono = !!cliente && !cliente.telefono;
   const necesitaUbicacion =
-    !!cliente && tipoEntrega === "domicilio" && !otraDireccion &&
+    !!cliente &&
+    tipoEntrega === "domicilio" &&
+    !otraDireccion &&
     (!cliente.departamento || !cliente.municipio || !cliente.direccion_exacta);
   const necesitaCompletar = necesitaTelefono || necesitaUbicacion;
   const municipiosPerfil = HONDURAS_LOCATIONS[perfilForm.departamento] || [];
@@ -302,6 +288,7 @@ export default function CheckoutPage() {
     [opciones]
   );
 
+  // Mantener las selecciones dentro de lo permitido
   useEffect(() => {
     if (!opciones) return;
     if (entregaDisponible.length && !entregaDisponible.some((o) => o.id === tipoEntrega)) {
@@ -311,11 +298,13 @@ export default function CheckoutPage() {
     else if (metodoPago && !pagoDisponible.some((o) => o.id === metodoPago)) setMetodoPago("");
   }, [opciones, entregaDisponible, pagoDisponible]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Validaciones por paso ───────────────────────────────────────────────────
   const paso1Valido = useMemo(() => {
+    if (opciones?.conflicto_pago) return false;
     if (necesitaCompletar && !perfilFormValido) return false;
     if (tipoEntrega === "domicilio" && otraDireccion && !direccionOtraTexto.trim()) return false;
     return true;
-  }, [necesitaCompletar, perfilFormValido, tipoEntrega, otraDireccion, direccionOtraTexto]);
+  }, [opciones, necesitaCompletar, perfilFormValido, tipoEntrega, otraDireccion, direccionOtraTexto]);
 
   const paso2Valido = metodoPago !== "" && !opciones?.conflicto_pago;
 
@@ -323,9 +312,10 @@ export default function CheckoutPage() {
   const guardarPerfilFaltante = async (): Promise<boolean> => {
     const token = localStorage.getItem("access_token");
     if (!token) {
-      router.replace(`/fenix/mi-cuenta/login?next=${encodeURIComponent("/fenix/carrito/checkout")}`);
+      router.replace(LOGIN_URL);
       return false;
     }
+
     const payload: Record<string, string> = {};
     if (necesitaTelefono) payload.telefono = perfilForm.telefono;
     if (necesitaUbicacion) {
@@ -333,6 +323,7 @@ export default function CheckoutPage() {
       payload.municipio = perfilForm.municipio;
       payload.direccion_exacta = perfilForm.direccion_exacta.trim();
     }
+
     setGuardandoPerfil(true);
     setErrorPerfil("");
     try {
@@ -342,14 +333,16 @@ export default function CheckoutPage() {
         body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));
+
       if (res.status === 401) {
-        router.replace(`/fenix/mi-cuenta/login?next=${encodeURIComponent("/fenix/carrito/checkout")}`);
+        router.replace(LOGIN_URL);
         return false;
       }
       if (!res.ok) {
         setErrorPerfil(typeof data.detail === "string" ? data.detail : "No se pudieron guardar tus datos");
         return false;
       }
+
       setCliente((prev) => (prev ? { ...prev, ...data.user } : prev));
       return true;
     } catch {
@@ -377,17 +370,17 @@ export default function CheckoutPage() {
     const token = localStorage.getItem("access_token");
 
     try {
-      // Guardar nueva dirección si aplica
-      let dirAltFinal: string | null;
-        if (tipoEntrega === "domicilio") {
-          dirAltFinal = otraDireccion
-            ? direccionOtraTexto.trim()
-            : `${cliente.departamento}, ${cliente.municipio} — ${cliente.direccion_exacta}`;
-        } else {
-          dirAltFinal = tipoEntrega === "tienda" ? "Retiro en tienda del vendedor" : "Oficina Mercado Fénix";
-        }
+      // Dirección de entrega: la del perfil, o la que escribió el cliente
+      let dirAltFinal: string;
+      if (tipoEntrega === "domicilio") {
+        dirAltFinal = otraDireccion
+          ? direccionOtraTexto.trim()
+          : `${cliente.departamento}, ${cliente.municipio} — ${cliente.direccion_exacta}`;
+      } else {
+        dirAltFinal = tipoEntrega === "tienda" ? "Retiro en tienda del vendedor" : "Oficina Mercado Fénix";
+      }
 
-      // Construir items del pedido desde el carrito
+      // Items del pedido desde el carrito
       const itemsPedido = items.map((item) => ({
         producto_id: item.producto_id,
         nombre_producto: item.nombre_producto,
@@ -415,9 +408,13 @@ export default function CheckoutPage() {
         body: JSON.stringify(body),
       });
 
+      if (res.status === 401) {
+        router.replace(LOGIN_URL);
+        return;
+      }
       if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.detail || "Error al crear el pedido");
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(typeof errData.detail === "string" ? errData.detail : "Error al crear el pedido");
       }
 
       const data = await res.json();
@@ -426,7 +423,10 @@ export default function CheckoutPage() {
 
       // Vaciar carrito tras confirmar el pedido
       try {
-        const headers: HeadersInit = { "Content-Type": "application/json" };
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+          "X-Cart-Session": getCartSessionId(),
+        };
         if (token) headers["Authorization"] = `Bearer ${token}`;
         await fetch(`${API_URL}/api/carrito/vaciar`, {
           method: "POST",
@@ -517,6 +517,29 @@ export default function CheckoutPage() {
     );
   }
 
+  // ─── ERROR AL CARGAR (hay sesión, pero el servidor no respondió bien) ─────────
+  if (!cliente && errorCarga) {
+    return (
+      <div className="mf-body-pad min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="max-w-sm w-full text-center">
+          <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-6">
+            <AlertCircle className="w-10 h-10 text-red-400" />
+          </div>
+          <h1 className="text-xl font-black text-gray-900 mb-2">No pudimos cargar tu pedido</h1>
+          <p className="text-gray-500 text-sm mb-6">
+            Tu sesión sigue activa. Revisa tu conexión e inténtalo de nuevo.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full bg-orange-600 hover:bg-orange-700 text-white py-3.5 rounded-2xl font-bold transition-colors"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // ─── USUARIO NO AUTENTICADO ──────────────────────────────────────────────────
   if (!cliente) {
     return (
@@ -538,13 +561,13 @@ export default function CheckoutPage() {
 
             <div className="flex flex-col gap-3">
               <Link
-                href={`/fenix/mi-cuenta/login?next=/fenix/carrito/checkout`}
+                href={LOGIN_URL}
                 className="w-full bg-orange-600 hover:bg-orange-700 text-white py-4 rounded-2xl font-bold text-lg text-center transition-colors"
               >
                 Iniciar sesión
               </Link>
               <Link
-                href={`/fenix/mi-cuenta/registro?redirect=/fenix/carrito/checkout`}
+                href="/fenix/mi-cuenta/registro?redirect=/fenix/carrito/checkout"
                 className="w-full border-2 border-orange-200 hover:border-orange-400 text-orange-600 py-4 rounded-2xl font-bold text-lg text-center transition-colors"
               >
                 Crear cuenta nueva
@@ -562,7 +585,7 @@ export default function CheckoutPage() {
 
   // ─── CHECKOUT PRINCIPAL ──────────────────────────────────────────────────────
   return (
-    // pb-44 (antes pb-36): deja espacio suficiente para que el último elemento
+    // pb-44: deja espacio suficiente para que el último elemento
     // no quede tapado por CTA + navbar apilados en móvil
     <div className="mf-body-pad min-h-screen bg-gray-50 pb-44 lg:pb-10">
 
@@ -571,7 +594,10 @@ export default function CheckoutPage() {
         <div className="mf-container py-3.5 sm:py-4">
           <div className="lg:max-w-5xl lg:mx-auto">
             <div className="flex items-center gap-3 mb-3">
-              <button onClick={() => paso > 1 ? setPaso((paso - 1) as 1 | 2 | 3) : router.back()} className="p-2 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors flex-shrink-0">
+              <button
+                onClick={() => (paso > 1 ? setPaso((paso - 1) as 1 | 2 | 3) : router.back())}
+                className="p-2 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors flex-shrink-0"
+              >
                 <ArrowLeft className="w-5 h-5 text-gray-700" />
               </button>
               <div className="flex-1 min-w-0">
@@ -591,12 +617,12 @@ export default function CheckoutPage() {
       <div className="mf-container py-5">
         <div className="lg:max-w-5xl lg:mx-auto lg:grid lg:grid-cols-[1fr_360px] lg:gap-8 lg:items-start">
 
-        {/* ══════════════════════════════════════════
-            PASO 1 — MÉTODO DE ENTREGA + DIRECCIÓN
-        ══════════════════════════════════════════ */}
         {/* ── LEFT COLUMN: pasos ─────────────────────────────────────────── */}
         <div>
 
+        {/* ══════════════════════════════════════════
+            PASO 1 — MÉTODO DE ENTREGA + DIRECCIÓN
+        ══════════════════════════════════════════ */}
         {paso === 1 && (
           <div className="space-y-5 animate-fade-in">
 
@@ -608,17 +634,40 @@ export default function CheckoutPage() {
               <div className="min-w-0">
                 <p className="text-xs text-gray-500">Comprando como</p>
                 <p className="font-bold text-gray-900 truncate">{cliente.nombres} {cliente.apellidos}</p>
-                <p className="text-xs text-gray-500 flex items-center gap-1">
-                  <Phone className="w-3 h-3 flex-shrink-0" /> {cliente.telefono && (
-                    <p className="text-xs text-gray-500 flex items-center gap-1">
-                      <Phone className="w-3 h-3 flex-shrink-0" /> {cliente.telefono}
-                    </p>
-                  )}
-                </p>
+                {cliente.telefono ? (
+                  <p className="text-xs text-gray-500 flex items-center gap-1">
+                    <Phone className="w-3 h-3 flex-shrink-0" /> {cliente.telefono}
+                  </p>
+                ) : cliente.email ? (
+                  <p className="text-xs text-gray-500 truncate">{cliente.email}</p>
+                ) : null}
               </div>
             </div>
 
-            {/* Opciones de entrega */}
+            {/* Aviso: las tiendas del carrito no comparten método de pago */}
+            {opciones?.conflicto_pago && (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-amber-800 space-y-2">
+                <div className="flex gap-2">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <p className="font-bold text-sm">
+                    Las tiendas de tu carrito no aceptan un mismo método de pago.
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  {opciones.tiendas.map((t) => (
+                    <p key={t.nombre} className="text-xs">
+                      <span className="font-semibold">{t.nombre}:</span> {t.pago.join(", ")}
+                    </p>
+                  ))}
+                </div>
+                <p className="text-xs">
+                  Compra los productos de cada tienda por separado.{" "}
+                  <Link href="/fenix/carrito" className="font-bold underline">Volver al carrito</Link>
+                </p>
+              </div>
+            )}
+
+            {/* Opciones de entrega (según lo que aceptan los vendedores) */}
             <div>
               <h2 className="font-black text-gray-900 text-base sm:text-lg mb-3">¿Cómo quieres recibir tu pedido?</h2>
               <div className="space-y-2.5">
@@ -649,7 +698,7 @@ export default function CheckoutPage() {
                         </div>
                         <div className="text-right flex-shrink-0">
                           {op.costo > 0 ? (
-                            <span className="text-sm font-bold text-gray-700">+L{op.costo}</span>
+                            <span className="text-sm font-bold text-gray-700"></span>
                           ) : (
                             <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Gratis</span>
                           )}
@@ -666,22 +715,27 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Bloque de dirección — solo si domicilio */}
             {/* Datos faltantes: solo aparece si la cuenta no tiene lo necesario */}
             {necesitaCompletar && (
               <div className="bg-white rounded-2xl border-2 border-orange-200 p-4 space-y-3">
                 <div>
                   <p className="font-black text-gray-900 text-sm">Completa tus datos</p>
-                  <p className="text-xs text-gray-500">Faltan algunos datos de tu cuenta para poder entregar tu pedido.</p>
+                  <p className="text-xs text-gray-500">
+                    Faltan algunos datos de tu cuenta para poder entregar tu pedido.
+                  </p>
                 </div>
 
                 {necesitaTelefono && (
                   <div>
                     <label className="text-xs font-semibold text-gray-600 mb-1 block">Teléfono *</label>
                     <input
-                      type="tel" inputMode="numeric" placeholder="99751480"
+                      type="tel"
+                      inputMode="numeric"
+                      placeholder="99751480"
                       value={perfilForm.telefono}
-                      onChange={(e) => setPerfilForm((p) => ({ ...p, telefono: e.target.value.replace(/\D/g, "").slice(0, 8) }))}
+                      onChange={(e) =>
+                        setPerfilForm((p) => ({ ...p, telefono: e.target.value.replace(/\D/g, "").slice(0, 8) }))
+                      }
                       className="w-full border-2 border-gray-200 focus:border-orange-400 rounded-xl px-3 py-2.5 text-sm outline-none transition-colors"
                     />
                   </div>
@@ -719,7 +773,8 @@ export default function CheckoutPage() {
                     <div>
                       <label className="text-xs font-semibold text-gray-600 mb-1 block">Dirección exacta *</label>
                       <input
-                        type="text" placeholder="Colonia, calle, número de casa..."
+                        type="text"
+                        placeholder="Colonia, calle, número de casa..."
                         value={perfilForm.direccion_exacta}
                         onChange={(e) => setPerfilForm((p) => ({ ...p, direccion_exacta: e.target.value }))}
                         className="w-full border-2 border-gray-200 focus:border-orange-400 rounded-xl px-3 py-2.5 text-sm outline-none transition-colors"
@@ -742,7 +797,7 @@ export default function CheckoutPage() {
               <div className="space-y-3">
                 <h2 className="font-black text-gray-900 text-base sm:text-lg">¿A dónde te lo enviamos?</h2>
 
-                {!otraDireccion && !necesitaUbicacion && cliente && (
+                {!otraDireccion && !necesitaUbicacion && (
                   <div className="p-4 rounded-2xl border-2 border-orange-500 bg-orange-50 flex items-start gap-3">
                     <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-orange-500" />
                     <div className="min-w-0">
@@ -755,7 +810,8 @@ export default function CheckoutPage() {
 
                 {otraDireccion && (
                   <input
-                    type="text" placeholder="Departamento, ciudad, colonia, calle y número de casa..."
+                    type="text"
+                    placeholder="Departamento, ciudad, colonia, calle y número de casa..."
                     value={direccionOtraTexto}
                     onChange={(e) => setDireccionOtraTexto(e.target.value)}
                     className="w-full border-2 border-gray-200 focus:border-orange-400 rounded-xl px-3 py-2.5 text-sm outline-none transition-colors"
@@ -807,17 +863,6 @@ export default function CheckoutPage() {
             <h2 className="font-black text-gray-900 text-base sm:text-lg">¿Cómo vas a pagar?</h2>
 
             <div className="space-y-3">
-              {opciones?.conflicto_pago && (
-                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800 space-y-2">
-                  <p className="font-bold">Las tiendas de tu carrito no comparten un método de pago.</p>
-                  {opciones.tiendas.map((t) => (
-                    <p key={t.nombre} className="text-xs">
-                      <span className="font-semibold">{t.nombre}:</span> {t.pago.join(", ")}
-                    </p>
-                  ))}
-                  <p className="text-xs">Compra los productos de cada tienda por separado.</p>
-                </div>
-              )}              
               {pagoDisponible.map((op) => {
                 const Icon = op.icon;
                 const activa = metodoPago === op.id;
@@ -946,7 +991,7 @@ export default function CheckoutPage() {
                   <p className="text-sm font-semibold text-gray-900">
                     {tipoEntrega === "domicilio" ? "A domicilio" : tipoEntrega === "tienda" ? "Retiro en tienda" : "Oficina Mercado Fénix"}
                   </p>
-                  {tipoEntrega === "domicilio" && cliente && (
+                  {tipoEntrega === "domicilio" && (
                     <p className="text-xs text-gray-500 truncate">
                       {otraDireccion ? direccionOtraTexto : `${cliente.municipio}, ${cliente.departamento}`}
                     </p>
@@ -1057,11 +1102,20 @@ export default function CheckoutPage() {
             {paso < 3 ? (
               <button
                 onClick={continuar}
-                disabled={guardandoPerfil || (paso === 1 ? !paso1Valido : paso === 2 ? !paso2Valido : false)}
+                disabled={guardandoPerfil || (paso === 1 ? !paso1Valido : !paso2Valido)}
                 className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 transition-all"
               >
-                Continuar
-                <ChevronRight className="w-5 h-5" />
+                {guardandoPerfil ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  <>
+                    Continuar
+                    <ChevronRight className="w-5 h-5" />
+                  </>
+                )}
               </button>
             ) : (
               <button
@@ -1084,17 +1138,15 @@ export default function CheckoutPage() {
             )}
 
             {/* Info del cliente */}
-            {cliente && (
-              <div className="flex items-center gap-3 px-1">
-                <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                  <User className="w-4 h-4 text-orange-600" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs text-gray-500">Comprando como</p>
-                  <p className="text-sm font-bold text-gray-900 truncate">{cliente.nombres} {cliente.apellidos}</p>
-                </div>
+            <div className="flex items-center gap-3 px-1">
+              <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                <User className="w-4 h-4 text-orange-600" />
               </div>
-            )}
+              <div className="min-w-0">
+                <p className="text-xs text-gray-500">Comprando como</p>
+                <p className="text-sm font-bold text-gray-900 truncate">{cliente.nombres} {cliente.apellidos}</p>
+              </div>
+            </div>
 
           </div>
         </div>{/* fin RIGHT COLUMN */}
@@ -1104,14 +1156,9 @@ export default function CheckoutPage() {
 
       {/* ── BARRA INFERIOR FIJA — solo móvil ────────────────────────────────────── */}
       {/*
-        FIX: antes esta barra usaba "bottom-0", exactamente la misma posición
-        que el MobileNav global (Hogar/Tiendas/Productos/Favoritos/Ya), así que
-        el nav quedaba pintado encima y tapaba el botón.
-
-        "bottom-16" la sube 64px (altura típica de una bottom-nav de 5 íconos).
-        Si tu MobileNav mide distinto, ajusta este valor para que calce exacto
-        justo arriba del nav — lo ideal es que ambos compartan una sola
-        constante de altura en el proyecto para no tener que sincronizarlo a mano.
+        "bottom-16" la sube 64px (altura típica de una bottom-nav de 5 íconos)
+        para que el MobileNav global no tape el botón. Si tu MobileNav mide
+        distinto, ajusta este valor.
       */}
       <div
         className="fixed bottom-16 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-[0_-8px_24px_-8px_rgba(0,0,0,0.15)] lg:hidden"
@@ -1121,11 +1168,20 @@ export default function CheckoutPage() {
           {paso < 3 ? (
             <button
               onClick={continuar}
-              disabled={guardandoPerfil || (paso === 1 ? !paso1Valido : paso === 2 ? !paso2Valido : false)}
+              disabled={guardandoPerfil || (paso === 1 ? !paso1Valido : !paso2Valido)}
               className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3.5 sm:py-4 rounded-2xl font-bold text-base sm:text-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-md shadow-orange-900/10"
             >
-              Continuar
-              <ChevronRight className="w-5 h-5" />
+              {guardandoPerfil ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  Continuar
+                  <ChevronRight className="w-5 h-5" />
+                </>
+              )}
             </button>
           ) : (
             <button
