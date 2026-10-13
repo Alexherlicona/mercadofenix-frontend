@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-const PLATAFORMA_URL = "https://mercadofenix.vercel.app"; // ← cambia a tu dominio
+const PLATAFORMA_URL = "https://mercadofenix.vercel.app/fenix"; // ← cambia a tu dominio
 
 function getToken() { return typeof window !== "undefined" ? localStorage.getItem("vendedor_token") : null; }
 function authHeaders() { const t = getToken(); return t ? { Authorization: `Bearer ${t}` } : {}; }
@@ -24,7 +24,8 @@ function slugify(t: string) {
     .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 function buildProductoURL(vendedor: any, productoId: string) {
-  return `${PLATAFORMA_URL}/tienda/${slugify(vendedor.nombre_tienda)}-${slugify(vendedor.municipio)}/producto/${productoId}`;
+  const slug = `${slugify(vendedor.nombre_tienda)}-${slugify(vendedor.municipio)}`;
+  return `${PLATAFORMA_URL}/tiendas/${slug}?producto=${encodeURIComponent(productoId)}`;
 }
 function buildTextoCompartir(producto: any, vendedor: any, url: string) {
   const precio = producto.precio_con_descuento || producto.precio;
