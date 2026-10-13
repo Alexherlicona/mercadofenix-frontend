@@ -10,6 +10,7 @@ import {
   CreditCard, Search, Loader2, ShoppingBag, Eye
 } from "lucide-react";
 import ProductCard from "@/components/ui/ProductCard";
+import ProductModal from "@/components/ui/ProductModal";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -38,6 +39,7 @@ export default function TiendaIndividualPage() {
   const [error, setError] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [categoriaActiva, setCategoriaActiva] = useState<string>("todas");
+  const [productoLink, setProductoLink] = useState<any>(null);
 
   useEffect(() => {
     const cargar = async () => {
@@ -55,6 +57,31 @@ export default function TiendaIndividualPage() {
     };
     if (slug) cargar();
   }, [slug]);
+  // Abrir modal automáticamente si la URL trae ?producto=ID
+  useEffect(() => {
+    if (!tienda || productos.length === 0) return;
+    const id = new URLSearchParams(window.location.search).get("producto");
+    if (!id) return;
+    const p = productos.find(x => String(x.id) === id);
+    if (p) {
+      // El endpoint de tienda puede no incluir estos campos que usa el modal
+      setProductoLink({
+        ...p,
+        nombre_tienda: p.nombre_tienda ?? tienda.nombre_tienda,
+        municipio: p.municipio ?? tienda.municipio,
+        departamento: p.departamento ?? tienda.departamento,
+        slug_tienda: p.slug_tienda ?? tienda.slug,
+        tipo_pago: p.tipo_pago ?? tienda.tipo_pago?.join(", "),
+        tipo_entrega: p.tipo_entrega ?? tienda.tipo_entrega?.join(", "),
+      });
+    }
+  }, [tienda, productos]);
+
+  const cerrarProductoLink = () => {
+    setProductoLink(null);
+    // Quita ?producto= para que no se reabra al refrescar
+    window.history.replaceState(null, "", window.location.pathname);
+  };
 
   // Categorías únicas de los productos
   const categorias = useMemo(() => {
@@ -242,6 +269,11 @@ export default function TiendaIndividualPage() {
           </div>
         )}
       </div>
+      <ProductModal
+        producto={productoLink}
+        isOpen={!!productoLink}
+        onClose={cerrarProductoLink}
+      />
     </div>
   );
 }
