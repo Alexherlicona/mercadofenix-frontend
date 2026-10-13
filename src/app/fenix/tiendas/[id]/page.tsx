@@ -60,20 +60,25 @@ export default function TiendaIndividualPage() {
   // Abrir modal automáticamente si la URL trae ?producto=ID
   useEffect(() => {
     if (!tienda || productos.length === 0) return;
-    const id = new URLSearchParams(window.location.search).get("producto");
-    if (!id) return;
-    const p = productos.find(x => String(x.id) === id);
-    if (p) {
-      // El endpoint de tienda puede no incluir estos campos que usa el modal
+    try {
+      const id = new URLSearchParams(window.location.search).get("producto");
+      if (!id) return;
+      const p = productos.find(x => String(x.id) === id);
+      if (!p) return;
+
+      const aTexto = (v: any) => Array.isArray(v) ? v.join(", ") : (v ?? "");
+
       setProductoLink({
         ...p,
         nombre_tienda: p.nombre_tienda ?? tienda.nombre_tienda,
         municipio: p.municipio ?? tienda.municipio,
         departamento: p.departamento ?? tienda.departamento,
         slug_tienda: p.slug_tienda ?? tienda.slug,
-        tipo_pago: p.tipo_pago ?? tienda.tipo_pago?.join(", "),
-        tipo_entrega: p.tipo_entrega ?? tienda.tipo_entrega?.join(", "),
+        tipo_pago: p.tipo_pago ?? aTexto(tienda.tipo_pago),
+        tipo_entrega: p.tipo_entrega ?? aTexto(tienda.tipo_entrega),
       });
+    } catch (e) {
+      console.error("Error abriendo producto desde el link:", e);
     }
   }, [tienda, productos]);
 
