@@ -438,7 +438,7 @@ export default function NuevoProducto() {
           precio_con_descuento: precioFinal ? parseFloat(precioFinal) : null,
           porcentaje_descuento: descuento ? parseFloat(descuento) : 0,
           stock: tipo === "fisico" ? parseInt(stock || "1") : null,
-          fotos: fotos.length > 0 ? [{ url: null }] : [],  // fotos aún no tienen URL pública
+          foto_preview: tipo === "fisico" ? (fotos[0]?.preview ?? null) : portadaPreview,
         });
         setModalCompartir(true);
       } else {
@@ -1361,6 +1361,13 @@ function ModalCompartirPost({
       <div className="w-full sm:max-w-md bg-white dark:bg-[#0e0e1a] sm:rounded-3xl border border-gray-200 dark:border-[#1c1c2e] shadow-2xl overflow-hidden">
 
         {/* Success header */}
+        {producto.foto_preview && (
+          <div className="px-5 pt-4">
+            <img src={producto.foto_preview} alt={producto.nombre}
+              className="w-full h-40 object-contain rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10" />
+            <p className="text-[10px] text-gray-400 dark:text-gray-600 mt-1 text-center">Esta portada se publicará con tu producto</p>
+          </div>
+        )}
         <div className="px-5 py-5 bg-gradient-to-r from-emerald-50 to-white dark:from-emerald-950/60 dark:to-[#0e0e1a] border-b border-gray-200 dark:border-[#1a1a2e]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
