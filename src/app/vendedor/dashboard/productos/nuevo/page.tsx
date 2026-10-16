@@ -1294,7 +1294,7 @@ function ModalCompartirPost({
   producto: any; vendedor: any;
   onClose: () => void; onCompartir: () => void;
 }) {
-  const productoURL = `${PLATAFORMA_URL}/tienda/${slugify(vendedor.nombre_tienda)}-${slugify(vendedor.municipio)}/producto/${producto.id}`;
+const productoURL = buildProductoURL(vendedor, producto.id);
   const textoBase   = buildTextoCompartir(producto, vendedor, productoURL);
 
   const [conexiones, setConexiones] = useState<any[]>([]);
@@ -1302,7 +1302,7 @@ function ModalCompartirPost({
   const [texto,      setTexto]      = useState(textoBase);
   const [copiado,    setCopiado]    = useState(false);
   const [publicando, setPub]        = useState(false);
-  const [estados,    setEstados]    = useState<Record<string, {estado: string; post_url?: string}>>({});
+  const [estados, setEstados] = useState<Record<string, {estado: string; post_url?: string; msg?: string}>>({});
 
   useEffect(() => {
     axios.get(`${API_URL}/api/vendedor/redes-sociales`, { headers: authHeaders() })
@@ -1321,13 +1321,26 @@ function ModalCompartirPost({
     instagram: { nombre: "Instagram", color: "#E1306C" },
   } as const;
 
-  const compartirNivelA = (red: "facebook" | "instagram") => {
-    const enc = encodeURIComponent(productoURL);
+  const FOTO_SOCIAL = `${API_URL}/api/public/producto/${producto.id}/foto-social.jpg`;
+
+  const compartirNivelA = async (red: "facebook" | "instagram") => {
+    navigator.clipboard.writeText(texto).catch(() => {});
     if (red === "facebook") {
-      window.open(`https://www.facebook.com/sharer/sharer.php?u=${enc}`, "_blank", "width=600,height=500");
+      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(productoURL)}`, "_blank", "width=600,height=500");
     } else {
-      navigator.clipboard.writeText(texto);
-      window.open("https://www.instagram.com/", "_blank");
+      try {
+        const blob = await (await fetch(FOTO_SOCIAL)).blob();
+        const file = new File([blob], "producto.jpg", { type: "image/jpeg" });
+        if ((navigator as any).canShare?.({ files: [file] })) {
+          await navigator.share({ files: [file], text: texto });
+        } else {
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob); a.download = "producto.jpg"; a.click();
+          window.open("https://www.instagram.com/", "_blank");
+        }
+      } catch {
+        window.open("https://www.instagram.com/", "_blank");
+      }
     }
     setEstados(p => ({ ...p, [red]: { estado: "ok" } }));
   };
@@ -1335,13 +1348,12 @@ function ModalCompartirPost({
   const publicarAutomatico = async (red: "facebook" | "instagram") => {
     setEstados(p => ({ ...p, [red]: { estado: "publicando" } }));
     try {
-      const res = await axios.post(`${API_URL}/api/vendedor/publicar-red-social`, {
-        red, producto_id: producto.id, texto,
-        foto_url: null, producto_url: productoURL,
-      }, { headers: authHeaders() });
+      const res = await axios.post(`${API_URL}/api/vendedor/publicar-red-social`,
+        { red, producto_id: producto.id, texto, producto_url: productoURL },
+        { headers: authHeaders() });
       setEstados(p => ({ ...p, [red]: { estado: "ok", post_url: res.data?.post_url } }));
     } catch (err: any) {
-      setEstados(p => ({ ...p, [red]: { estado: "error" } }));
+      setEstados(p => ({ ...p, [red]: { estado: "error", msg: err.response?.data?.detail || "Error al publicar" } }));
     }
   };
 
@@ -1349,7 +1361,7 @@ function ModalCompartirPost({
     setPub(true);
     for (const red of Array.from(selec) as ("facebook" | "instagram")[]) {
       const cx = conexiones.find(c => c.red === red);
-      cx?.conectada ? await publicarAutomatico(red) : compartirNivelA(red);
+      cx?.conectada ? await publicarAutomatico(red) : await compartirNivelA(red);
     }
     setPub(false);
   };
@@ -1358,16 +1370,9 @@ function ModalCompartirPost({
 
   return (
     <div className="fixed inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="w-full sm:max-w-md bg-white dark:bg-[#0e0e1a] sm:rounded-3xl border border-gray-200 dark:border-[#1c1c2e] shadow-2xl overflow-hidden">
-
+      <div className="w-full sm:max-w-md bg-white dark:bg-[#0e0e1a] sm:rounded-3xl border border-gray-200 dark:border-[#1c1c2e] shadow-2xl overflow-hidden max-h-[92dvh] overflow-y-auto">
         {/* Success header */}
-        {producto.foto_preview && (
-          <div className="px-5 pt-4">
-            <img src={producto.foto_preview} alt={producto.nombre}
-              className="w-full h-40 object-contain rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10" />
-            <p className="text-[10px] text-gray-400 dark:text-gray-600 mt-1 text-center">Esta portada se publicará con tu producto</p>
-          </div>
-        )}
+
         <div className="px-5 py-5 bg-gradient-to-r from-emerald-50 to-white dark:from-emerald-950/60 dark:to-[#0e0e1a] border-b border-gray-200 dark:border-[#1a1a2e]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
@@ -1379,7 +1384,13 @@ function ModalCompartirPost({
             </div>
           </div>
         </div>
-
+        {producto.foto_preview && (
+          <div className="px-5 pt-4">
+            <img src={producto.foto_preview} alt={producto.nombre}
+              className="w-full h-40 object-contain rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10" />
+            <p className="text-[10px] text-gray-400 dark:text-gray-600 mt-1 text-center">Esta portada se publicará con tu producto</p>
+          </div>
+        )}
         <div className="p-5 space-y-4">
           {/* Pregunta compartir */}
           <div>
@@ -1412,6 +1423,11 @@ function ModalCompartirPost({
               );
             })}
           </div>
+          {Object.entries(estados).filter(([, e]) => e.estado === "error").map(([red, e]) => (
+            <p key={red} className="text-xs text-red-500 dark:text-red-400">
+              {REDES_CFG[red as "facebook" | "instagram"].nombre}: {e.msg}
+            </p>
+          ))}
 
           {/* Texto editable compacto */}
           <div>
