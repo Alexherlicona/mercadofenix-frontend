@@ -1369,7 +1369,7 @@ const productoURL = buildProductoURL(vendedor, producto.id);
   const todoOk = Array.from(selec).every(r => estados[r]?.estado === "ok");
 
   return (
-    <div className="fixed inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div className="fixed inset-0 bg-black/60 dark:bg-black/90 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 pb-20 sm:p-4">
       <div className="w-full sm:max-w-md bg-white dark:bg-[#0e0e1a] sm:rounded-3xl border border-gray-200 dark:border-[#1c1c2e] shadow-2xl overflow-hidden max-h-[92dvh] overflow-y-auto">
         {/* Success header */}
 
