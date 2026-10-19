@@ -13,7 +13,7 @@ const getErrorMessage = (err: any): string => {
   if (!err.response) return "Sin conexión. Revisa tu internet.";
   const { status, data } = err.response;
   if (status === 429) return data?.detail || "Demasiados intentos. Espera 15 minutos.";
-  if (status === 403) return data?.detail || "Tu cuenta no está activa.";
+  if (status === 403) return data?.detail || "Tu cuenta Necesita Aprobación del Administrador.";
   if (status === 401) return data?.detail || "Credenciales incorrectas.";
   if (typeof data === "string") return data;
   if (data?.detail) return typeof data.detail === "string" ? data.detail : "Error en los datos";
