@@ -4,7 +4,8 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import {
   Store, Upload, CheckCircle, MapPin, Phone, Mail, Lock,
-  AlertCircle, Eye, EyeOff, IdCard, Link, Info, X, Loader2, Check
+  AlertCircle, Eye, EyeOff, IdCard, Link, Info, X, Loader2, Check,
+  Sparkles
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -139,6 +140,85 @@ function PasoIndicador({ actual }: { actual: number }) {
 
 const inp = "w-full px-4 py-3.5 rounded-2xl bg-white border-2 border-gray-200 text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:border-orange-500 transition-all";
 
+type ClaveInfo = "plataforma";
+const INFO_CONTENIDO: Record<ClaveInfo, {
+  icono: any; titulo: string; parrafos: string[]; lista?: string[];
+  }> = {
+    plataforma: {
+      icono: Sparkles,
+      titulo: "¿Qué es Mercado Fénix?",
+      parrafos: [
+        "Mercado Fénix es la plataforma que te da tu propia tienda en línea, con un link único que puedes compartir en WhatsApp, Facebook e Instagram.",
+        "Desde tu panel de vendedor puedes publicar productos físicos o digitales, recibir pedidos, chatear con tus clientes y ver estadísticas de tus ventas — todo en un solo lugar.",
+        "Para más información, contactar al administrador al whatsapp"
+      ],
+  },
+};
+// ── Botón pequeño de información ───────────────────────────────────────────────
+function BotonInfo({ clave, onOpen, className = "" }: { clave: ClaveInfo; onOpen: (c: ClaveInfo) => void; className?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(clave)}
+      aria-label="Más información"
+      className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-gray-400 hover:text-orange-600 hover:bg-orange-50 transition flex-shrink-0 ${className}`}
+    >
+      <Info className="w-3.5 h-3.5" />
+    </button>
+  );
+}
+
+function PanelInfo({ clave, onClose }: { clave: ClaveInfo; onClose: () => void }) {
+  const data = INFO_CONTENIDO[clave];
+  const Icono = data.icono;
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4"
+      onClick={onClose}>
+      <div onClick={e => e.stopPropagation()}
+        className="w-full sm:max-w-sm bg-white sm:rounded-3xl border border-gray-200 shadow-2xl overflow-hidden">
+        <div className="flex items-start gap-3 px-5 pt-5 pb-4 border-b border-gray-100">
+          <div className="w-10 h-10 rounded-2xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+            <Icono className="w-5 h-5 text-orange-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-gray-900 font-black text-base leading-tight">{data.titulo}</h3>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 transition p-1 -mt-1 -mr-1">
+            <X className="w-4.5 h-4.5" />
+          </button>
+        </div>
+        <div className="px-5 py-5 space-y-3">
+          {data.parrafos.map((p, i) => (
+            <p key={i} className="text-gray-600 text-sm leading-relaxed">{p}</p>
+          ))}
+          {data.lista && (
+            <ul className="space-y-2 pt-1">
+              {data.lista.map((item, i) => (
+                <li key={i} className="flex items-start gap-2 text-gray-600 text-sm leading-relaxed">
+                  <span className="w-1.5 h-1.5 rounded-full bg-orange-500 flex-shrink-0 mt-1.5" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className="px-5 pb-5">
+          <a className="w-full px-3 py-3 rounded-2xl bg-green-500 hover:bg-green-200 border border-gray-200 text-white font-semibold text-sm transition" href="https://wa.me/+50499751480?text=Necesito%20más%20información%20sobre%20la%20plataforma">
+            contactar
+          </a>          
+        </div>
+        <div className="px-5 pb-5">
+
+          <button onClick={onClose}
+            className="w-full py-3 rounded-2xl bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-700 font-semibold text-sm transition">
+            Entendido
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 export default function RegistroVendedor() {
   const [form, setForm] = useState({
@@ -151,6 +231,7 @@ export default function RegistroVendedor() {
   const [logo,       setLogo]       = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState("");
   const [documento,  setDocumento]  = useState<File | null>(null);
+  const [panelInfo,  setPanelInfo]  = useState<ClaveInfo | null>(null);
   const [showPass,   setShowPass]   = useState(false);
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState("");
@@ -253,7 +334,7 @@ export default function RegistroVendedor() {
       setLoading(false);
     }
   };
-
+  
   if (success) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-purple-50 flex items-center justify-center p-6">
@@ -281,6 +362,9 @@ export default function RegistroVendedor() {
           <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-red-500 to-purple-600">
             REGISTRA TU TIENDA
           </h1>
+                  {/* Icono de información general — esquina superior derecha */}
+        <BotonInfo clave="plataforma" onOpen={setPanelInfo}
+          className="relative top-9 left-27 w-8 h-8 bg-gray-50 border border-gray-200" />
           <p className="text-gray-500 mt-2 text-base">Mercado Fénix Honduras</p>
         </div>
 
@@ -562,6 +646,8 @@ export default function RegistroVendedor() {
           </div>
         </form>
       </div>
+            {/* Panel de información activo */}
+      {panelInfo && <PanelInfo clave={panelInfo} onClose={() => setPanelInfo(null)} />}
     </div>
   );
 }
