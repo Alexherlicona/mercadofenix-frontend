@@ -90,6 +90,45 @@ export function useNotificaciones(tipo: TipoUsuario) {
     } catch { /* silencioso */ }
   }, [tipo]);
 
+  // ── Enviar (o re-enviar) una suscripción existente al backend ─────────────
+  // Es idempotente: el backend la actualiza si ya la tiene. Se usa tanto al
+  // crear una suscripción nueva como al recargar la página con una que el
+  // navegador ya tenía (por si el guardado anterior falló).
+  const enviarSuscripcion = useCallback(async (subscription: PushSubscription): Promise<boolean> => {
+    try {
+      const dispositivo = `${navigator.platform}/${
+        navigator.userAgent.includes("Chrome") ? "Chrome" :
+        navigator.userAgent.includes("Firefox") ? "Firefox" :
+        navigator.userAgent.includes("Safari") ? "Safari" : "Otro"
+      }`;
+
+      const path = tipo === "vendedor"
+        ? "/api/notificaciones/suscribir/vendedor"
+        : "/api/notificaciones/suscribir/cliente";
+
+      const resSub = await fetch(`${API_URL}${path}`, {
+        method:  "POST",
+        headers: { ...authHdr(tipo), "Content-Type": "application/json" },
+        body:    JSON.stringify({ subscription: subscription.toJSON(), dispositivo }),
+      });
+
+      if (!resSub.ok) {
+        console.error(
+          `[Push] El backend rechazó guardar la suscripción (HTTP ${resSub.status}). ` +
+          `Revisa CORS, que el token sea válido y los logs del backend.`
+        );
+        return false;
+      }
+
+      setSuscrito(true);
+      console.log("[Push] ✓ Suscripción guardada en el backend");
+      return true;
+    } catch (e) {
+      console.error("[Push] No se pudo contactar al backend para guardar la suscripción:", e);
+      return false;
+    }
+  }, [tipo]);
+
   // ── Suscribir al push del navegador ───────────────────────────────────────
   const suscribirPush = useCallback(async (sw: ServiceWorkerRegistration) => {
     try {
@@ -115,41 +154,14 @@ export function useNotificaciones(tipo: TipoUsuario) {
         applicationServerKey: appServerKey.buffer as ArrayBuffer,
       });
 
-      // Detectar dispositivo
-      const dispositivo = `${navigator.platform}/${
-        navigator.userAgent.includes("Chrome") ? "Chrome" :
-        navigator.userAgent.includes("Firefox") ? "Firefox" :
-        navigator.userAgent.includes("Safari") ? "Safari" : "Otro"
-      }`;
-
-      // Enviar suscripción al backend
-      const path = tipo === "vendedor"
-        ? "/api/notificaciones/suscribir/vendedor"
-        : "/api/notificaciones/suscribir/cliente";
-
-      const resSub = await fetch(`${API_URL}${path}`, {
-        method:  "POST",
-        headers: { ...authHdr(tipo), "Content-Type": "application/json" },
-        body:    JSON.stringify({ subscription: subscription.toJSON(), dispositivo }),
-      });
-
-      if (!resSub.ok) {
-        console.error(
-          `[Push] El backend rechazó guardar la suscripción (HTTP ${resSub.status}). ` +
-          `Revisa CORS y que el token de auth sea válido.`
-        );
-        return;
-      }
-
-      setSuscrito(true);
-      console.log("[Push] ✓ Suscrito correctamente");
+      await enviarSuscripcion(subscription);
     } catch (e) {
       // Causa típica aquí: applicationServerKey inválida → revisar que
       // VAPID_PUBLIC_KEY y VAPID_PRIVATE_KEY en el backend sean el MISMO par
       // generado juntos (no uno de un par y otro de otro).
       console.error("[Push] Error al suscribir:", e);
     }
-  }, [tipo]);
+  }, [tipo, enviarSuscripcion]);
 
   // ── Pedir permiso explícitamente (llamar desde un botón) ──────────────────
   const pedirPermiso = useCallback(async () => {
@@ -214,8 +226,11 @@ export function useNotificaciones(tipo: TipoUsuario) {
         if (perm === "granted") {
           const existingSub = await sw.pushManager.getSubscription();
           if (existingSub) {
-            setSuscrito(true);
-            console.log("[Push] Ya había una suscripción push activa en este navegador");
+            // Antes aquí solo se hacía setSuscrito(true) asumiendo que el
+            // backend ya la tenía. Si el guardado inicial había fallado, nunca
+            // se recuperaba. Ahora se re-sincroniza SIEMPRE (es idempotente).
+            console.log("[Push] El navegador ya tenía una suscripción — sincronizando con el backend");
+            await enviarSuscripcion(existingSub);
           } else {
             await suscribirPush(sw);
           }
@@ -233,7 +248,7 @@ export function useNotificaciones(tipo: TipoUsuario) {
     };
 
     init();
-  }, [suscribirPush]);
+  }, [suscribirPush, enviarSuscripcion]);
 
   // ── Polling cada 30 s para actualizar el contador (respaldo del push) ─────
   useEffect(() => {
