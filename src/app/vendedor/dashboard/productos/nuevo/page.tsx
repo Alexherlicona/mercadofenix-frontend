@@ -338,8 +338,8 @@ export default function NuevoProducto() {
   };
 
   // ── Procesado de imágenes nuevas ─────────────────────────────────────────
-  // Cada foto pasa automáticamente por: quitar fondo con IA → optimizar a WebP.
-  // No requiere ningún interruptor ni botón — igual que la optimización.
+  // Cada foto se optimiza a WebP. El fondo NO se quita automáticamente:
+  // el usuario elige individualmente qué fotos le quitan el fondo (botón por foto).
   const procesarImagenes = async (files: File[]) => {
     const nuevas: FotoItem[] = files.map(f => ({
       id: Math.random().toString(36).slice(2), file: f, raw: f, preview: URL.createObjectURL(f),
@@ -348,8 +348,15 @@ export default function NuevoProducto() {
     }));
     setFotos(prev => [...prev, ...nuevas]);
     for (const item of nuevas) {
-      await procesarUnaFoto(item.id, item.raw, true);
+      await procesarUnaFoto(item.id, item.raw, false);
     }
+  };
+
+  // ── Quitar fondo de una foto ya agregada (opcional, por imagen) ─────────
+  const quitarFondoDeFoto = async (id: string) => {
+    const foto = fotos.find(f => f.id === id);
+    if (!foto || foto.sinFondo || foto.optimizing) return;
+    await procesarUnaFoto(id, foto.raw, true);
   };
   useEffect(() => () => { fotos.forEach(f => URL.revokeObjectURL(f.preview)); }, []);
 
@@ -1038,17 +1045,18 @@ export default function NuevoProducto() {
 
             {tipo === "fisico" ? (<>
 
-              {/* ── Aviso: quitar fondo con IA es automático ─────────────── */}
+              {/* ── Aviso: quitar fondo con IA es opcional por foto ─────────────── */}
               <div className="flex items-start gap-3 p-4 rounded-2xl bg-violet-50 border border-violet-200 dark:bg-violet-950/20 dark:border-violet-500/20">
                 <div className="w-9 h-9 rounded-xl bg-violet-500/15 flex items-center justify-center flex-shrink-0">
                   <Wand2 className="w-4.5 h-4.5 text-violet-600 dark:text-violet-400" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-bold text-gray-900 dark:text-white">El fondo se quita automáticamente</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">Quitar fondo solo en las fotos que elijas</p>
                   <p className="text-xs text-violet-600 dark:text-violet-400 font-semibold mt-2 leading-relaxed">
-                    📸 Consejo profesional: toma las fotos sobre un manto o tela de color sólido —
-                    verde, azul o negro — para que la IA recorte el fondo con más precisión.
-                    Evita usar un manto del mismo color que el producto.
+                    Las fotos se optimizan a WebP automáticamente. El fondo se quita con IA solo si
+                    le das al botón ✨ "Quitar fondo" de cada foto. 📸 Consejo: toma las fotos sobre
+                    un manto o tela de color sólido — verde, azul o negro — para que la IA recorte
+                    el fondo con más precisión. Evita un manto del mismo color que el producto.
                   </p>
                 </div>
               </div>
@@ -1117,8 +1125,15 @@ export default function NuevoProducto() {
                           </div>
                         )}
 
-                        {/* Badges inferiores: ahorro de peso + sin fondo */}
-                        <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 pointer-events-none">
+                        {/* Botón quitar fondo (opcional, por foto) + badges informativas */}
+                        <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1">
+                          {!foto.optimizing && !foto.sinFondo && (
+                            <button onClick={() => quitarFondoDeFoto(foto.id)}
+                              className="bg-black/60 hover:bg-violet-600 p-1.5 rounded-lg transition flex items-center gap-1.5 text-xs">
+                              <Wand2 className="w-3 h-3 text-white" />
+                              <span className="font-bold text-white leading-none">Quitar fondo</span>
+                            </button>
+                          )}
                           {!foto.optimizing && foto.optimizedKB > 0 && foto.optimizedKB < foto.originalKB && (
                             <div className="bg-emerald-700/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
                               <Zap className="w-2.5 h-2.5" />
