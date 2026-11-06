@@ -7,7 +7,7 @@ import {
   Plus, ImageIcon, AlertTriangle, CheckCircle2, Loader2,
   GripVertical, Zap, Upload, Tag, DollarSign,
   Shield, ChevronDown, FileText, Share2, Wifi, WifiOff,
-  ExternalLink, Copy, Check, Globe, Radio
+  ExternalLink, Copy, Check, Globe, Radio, Wand2
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -39,6 +39,23 @@ async function optimizarImagen(file: File, maxW = 1200, quality = 0.82): Promise
   });
 }
 
+// ── Quitar fondo con IA (100% en el navegador, vía @imgly/background-removal) ─
+// No se envía la foto a ningún servidor externo: el modelo se descarga una vez
+// (se cachea en el navegador) y todo el procesamiento corre localmente.
+// Requiere: npm install @imgly/background-removal
+async function quitarFondoImagen(file: File, onProgress?: (pct: number) => void): Promise<File> {
+  const { removeBackground } = await import("@imgly/background-removal");
+  const blob = await removeBackground(file, {
+    publicPath: "https://staticimgly.com/@imgly/background-removal-data/1.7.0/dist/",
+    output: { format: "image/png", quality: 0.92 },
+    progress: (clave: string, actual: number, total: number) => {
+      if (onProgress && total > 0) onProgress(Math.round((actual / total) * 100));
+    },
+  } as any);
+  const nombreBase = file.name.replace(/\.[^.]+$/, "");
+  return new File([blob], `${nombreBase}-sin-fondo.png`, { type: "image/png" });
+}
+
 // ── Helpers de URL ────────────────────────────────────────────────────────────
 function slugify(t: string) {
   return t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -56,7 +73,7 @@ function buildTexto(producto: any, vendedor: any, url: string) {
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 interface FotoExistente { id: number; url: string; orden: number; }
-interface FotoNueva { uid: string; file: File; preview: string; originalKB: number; optimizedKB: number; optimizing: boolean; }
+interface FotoNueva { uid: string; file: File; raw: File; preview: string; originalKB: number; optimizedKB: number; optimizing: boolean; sinFondo: boolean; procesandoFondo: boolean; fondoProgreso?: number; }
 interface Producto {
   id: string; tipo: string; nombre: string; categoria: string;
   precio: number; porcentaje_descuento: number; descripcion: string;
@@ -478,8 +495,9 @@ export default function MisProductos() {
 
   const procesarNuevas = async (files: File[]) => {
     const items: FotoNueva[] = files.map(f => ({
-      uid: Math.random().toString(36).slice(2), file: f,
+      uid: Math.random().toString(36).slice(2), file: f, raw: f,
       preview: URL.createObjectURL(f), originalKB: Math.round(f.size/1024), optimizedKB: 0, optimizing: true,
+      sinFondo: false, procesandoFondo: false,
     }));
     setFotasNuevas(prev => [...prev, ...items]);
     for (const item of items) {
@@ -489,6 +507,28 @@ export default function MisProductos() {
         setFotasNuevas(prev => prev.map(f => f.uid===item.uid ? {...f,file:opt,preview:pv,optimizedKB:Math.round(opt.size/1024),optimizing:false} : f));
         URL.revokeObjectURL(item.preview);
       } catch { setFotasNuevas(prev => prev.map(f => f.uid===item.uid ? {...f,optimizing:false,optimizedKB:f.originalKB} : f)); }
+    }
+  };
+
+  // ── Quitar fondo de una foto nueva ya agregada (opcional, por imagen) ─────
+  const quitarFondoDeFotoNueva = async (uid: string) => {
+    const foto = fotasNuevas.find(f => f.uid === uid);
+    if (!foto || foto.sinFondo || foto.optimizing) return;
+    setFotasNuevas(prev => prev.map(f => f.uid===uid ? {...f, procesandoFondo: true, fondoProgreso: undefined} : f));
+    try {
+      const sinFondo = await quitarFondoImagen(foto.raw, pct => {
+        setFotasNuevas(prev => prev.map(f => f.uid===uid ? {...f, fondoProgreso: pct} : f));
+      });
+      const opt = await optimizarImagen(sinFondo);
+      const pv = URL.createObjectURL(opt);
+      setFotasNuevas(prev => prev.map(f => f.uid===uid ? {
+        ...f, file: opt, preview: pv, optimizedKB: Math.round(opt.size/1024),
+        optimizing: false, procesandoFondo: false, fondoProgreso: undefined, sinFondo: true,
+      } : f));
+      URL.revokeObjectURL(pv);
+    } catch (err: any) {
+      setFotasNuevas(prev => prev.map(f => f.uid===uid ? {...f, procesandoFondo: false, fondoProgreso: undefined} : f));
+      showToast(`No se pudo quitar el fondo: ${err?.message || String(err)}`, "err");
     }
   };
 
@@ -937,6 +977,15 @@ export default function MisProductos() {
                               <img src={foto.preview} alt="" className="w-full h-full object-cover pointer-events-none"/>
                               {foto.optimizing && <div className="absolute inset-0 bg-black/65 flex flex-col items-center justify-center gap-1 pointer-events-none"><Loader2 className="w-4 h-4 text-orange-400 animate-spin"/><span className="text-[8px] text-orange-300 font-bold">Optimizando</span></div>}
                               {!foto.optimizing && foto.optimizedKB>0 && foto.optimizedKB<foto.originalKB && <div className="absolute bottom-1 left-1 bg-emerald-700/90 text-[8px] font-bold text-white px-1.5 py-0.5 rounded-md flex items-center gap-0.5 pointer-events-none"><Zap className="w-2 h-2"/>-{Math.round((1-foto.optimizedKB/foto.originalKB)*100)}%</div>}
+                              {!foto.optimizing && !foto.sinFondo && (
+                                <button onClick={()=>quitarFondoDeFotoNueva(foto.uid)}
+                                  className="absolute bottom-1 right-1 bg-black/60 hover:bg-violet-600 p-1 rounded-lg transition flex items-center gap-1 text-[10px]">
+                                  <Wand2 className="w-2.5 h-2.5 text-white"/><span className="font-bold text-white leading-none">Quitar fondo</span>
+                                </button>
+                              )}
+                              {!foto.optimizing && foto.sinFondo && (
+                                <div className="absolute bottom-1 right-1 bg-violet-600/90 text-[8px] font-bold text-white px-1.5 py-0.5 rounded-md flex items-center gap-0.5 pointer-events-none"><Wand2 className="w-2 h-2"/>Sin fondo</div>
+                              )}
                               <div className="absolute top-1 left-1 bg-emerald-700/80 text-[8px] font-black text-white px-1.5 py-0.5 rounded-md pointer-events-none">NUEVA</div>
                               <button onClick={()=>{URL.revokeObjectURL(foto.preview);setFotasNuevas(p=>p.filter(x=>x.uid!==foto.uid));}} className="absolute top-1 right-1 bg-black/60 hover:bg-red-600 p-1.5 rounded-lg transition"><X className="w-3 h-3 text-white"/></button>
                             </div>
