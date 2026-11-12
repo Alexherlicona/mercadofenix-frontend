@@ -548,13 +548,14 @@ export default function MisProductos() {
     fd.append("idioma",      form.idioma||"Español");
     fd.append("etiquetas", JSON.stringify((form.etiquetas||"").split(",").map((t:string)=>t.trim()).filter(Boolean)));
 
+    if (form.sku) fd.append("sku", form.sku.trim());
+
     if (editando.tipo === "fisico") {
       fd.append("stock",                form.stock||"1");
       fd.append("stock_minimo_alerta",  form.stock_minimo_alerta||"0");
       fd.append("condicion",            form.condicion||"nuevo");
       fd.append("marca",                form.marca||"");
       fd.append("modelo",               form.modelo||"");
-      fd.append("sku",                  form.sku||"");
       fd.append("material",             form.material||"");
       fd.append("garantia_meses",       form.garantia_meses||"0");
       fd.append("descripcion_garantia", form.descripcion_garantia||"");
@@ -564,6 +565,7 @@ export default function MisProductos() {
       if (form.alto_cm)     fd.append("alto_cm",     form.alto_cm);
       variantesEdit.filter(v=>v.key&&v.value).forEach(v => fd.append(v.key, v.value));
     } else {
+      if (form.sku) fd.append("sku", form.sku.trim());
       fd.append("licencia",          form.licencia||"personal");
       fd.append("version",           form.version||"");
       fd.append("nivel_dificultad",  form.nivel_dificultad||"");
@@ -775,6 +777,11 @@ export default function MisProductos() {
                     </F>
                     <F t="Descuento %"><input type="number" min="0" max="100" value={form.descuento||""} onChange={e=>setForm({...form,descuento:e.target.value})} placeholder="0" className={inp}/></F>
                   </div>
+
+                  {/* Código de producto (SKU) - general para todas las categorías */}
+                  <F t="Código de producto (SKU)" hint="Opcional — identificador único de tu producto">
+                    <input value={form.sku||""} onChange={e=>setForm({...form,sku:e.target.value.trim()})} placeholder="SKU-001..." className={inp}/>
+                  </F>
                   {form.precio && form.descuento && parseFloat(form.descuento)>0 && (
                     <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-500/20">
                       <Tag className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"/>
