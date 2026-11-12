@@ -391,11 +391,11 @@ export default function NuevoProducto() {
       fd.append("precio", precio); fd.append("descuento", descuento || "0");
       fd.append("descripcion", descripcion);
       fd.append("etiquetas", JSON.stringify(etiquetas.split(",").map(t => t.trim()).filter(Boolean)));
-
       if (tipo === "fisico") {
         fd.append("stock", stock || "1"); fd.append("stock_minimo_alerta", stockAlerta || "0");
         fd.append("condicion", condicion); fd.append("marca", marca); fd.append("modelo", modelo);
-        fd.append("sku", sku); fd.append("material", material);
+        if (sku) fd.append("sku", sku);
+        fd.append("material", material);
         fd.append("garantia_meses", garantiaMeses || "0"); fd.append("descripcion_garantia", descGarantia);
         if (pesoGramos) fd.append("peso_gramos", pesoGramos);
         if (largoCm)    fd.append("largo_cm", largoCm);
@@ -409,6 +409,7 @@ export default function NuevoProducto() {
         }
         fotos.forEach(f => fd.append("fotos", f.file));
       } else {
+        if (sku) fd.append("sku", sku);
         fd.append("licencia", licencia); fd.append("version", version);
         fd.append("compatibilidad", JSON.stringify(compatibilidad));
         fd.append("lenguajes", JSON.stringify(lenguajes.split(",").map(s => s.trim()).filter(Boolean)));
@@ -609,7 +610,7 @@ export default function NuevoProducto() {
               </div>
             </Lbl>
 
-            {/* Precio + descuento */}
+            {/* Precio + descuento + SKU */}
             <div className="grid grid-cols-2 gap-4">
               <Lbl t="Precio (L) *">
                 <div className="relative">
@@ -623,6 +624,12 @@ export default function NuevoProducto() {
                   placeholder="0" className={inp} />
               </Lbl>
             </div>
+
+            {/* Código de producto (SKU) - general para todas las categorías */}
+            <Lbl t="Código de producto (SKU)" hint="Opcional — identificador único de tu producto">
+              <input value={sku} onChange={e => setSku(e.target.value.trim())}
+                placeholder="Ej: SKU-001, CAM-001, ELEC-05..." className={inp} />
+            </Lbl>
 
             {precioFinal && (
               <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-500/20">
